@@ -1,0 +1,32 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "scheduling-is-hard",
+  "main": "src/server/routes.ts",
+  "compatibility_date": "2025-07-12",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  // "migrations": [
+  //   {
+  //     "new_sqlite_classes": [],
+  //     "tag": "v1"
+  //   }
+  // ],
+  // "durable_objects": {
+  //   "bindings": [
+  //     {
+  //       "name": "MY_DO",
+  //       "class_name": "MyDo"
+  //     }
+  //   ]
+  // },
+  "triggers": {
+    "crons": []
+  },
+  "assets": {
+    "directory": "./dist/client/",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  }
+}

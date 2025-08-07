@@ -1,0 +1,16 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* App Header */
+.app-header {
+  text-align: left;
+  padding: 0em 0em 1em 0em;
+}
+
+.app-title {
+  margin: 0;
+  font-size: 1.5em;
+}

@@ -1,0 +1,38 @@
+openapi: 3.0.3
+info:
+  title: Scheduling Is Hard API
+  description: API for app for mutually finding availability with any number of people.
+  version: 1.0.0
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: "https://scheduling-is-hard.{cloudflare-workers-subdomain}.workers.dev/api"
+    variables:
+      cloudflare-workers-subdomain:
+        default: replace-me
+
+security:
+  - BasicAuth: []
+
+paths:
+  /example:
+    get:
+      responses:
+        200:
+          description: Example response
+        404:
+          description: Not found
+
+components:
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+  schemas:
+    ExampleResponse:
+      type: object
+      properties:
+        message:
+          type: string
