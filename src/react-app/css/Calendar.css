@@ -16,12 +16,10 @@
 }
 
 .availability-calendar {
-  max-width: 500px;
   margin: 0 auto;
 }
 
 .mutual-calendar {
-  max-width: 500px;
   margin: 0 auto;
 }
 
@@ -62,15 +60,6 @@
   font-size: 0.875rem;
   color: #718096;
   display: block;
-}
-
-/* Inline Response Statistics */
-.response-stats-inline {
-  margin-top: 0.5rem;
-  padding: 0.75rem;
-  background: rgba(102, 126, 234, 0.05);
-  border-radius: 6px;
-  border: 1px solid rgba(102, 126, 234, 0.1);
 }
 
 .stat-inline {
@@ -201,6 +190,7 @@
   border-radius: 8px;
   overflow: hidden;
   margin-bottom: 1rem;
+  padding: 0.2em;
 }
 
 .day-header {
@@ -212,6 +202,7 @@
   color: #4a5568;
   text-transform: uppercase;
   letter-spacing: 0.025em;
+  border-radius: 6px;
 }
 
 .calendar-day {

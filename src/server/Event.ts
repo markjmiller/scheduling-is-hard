@@ -62,12 +62,14 @@ export class Event extends DurableObject<Env> {
     const guestList = await this.ctx.storage.get<Record<string, boolean>>(`event:${eventId}:guests`) || {};
     const guestIds = Object.keys(guestList);
     
-    if (guestIds.length === 0) {
+    // Get event data to use expectedAttendees for totalGuests
+    const eventData = await this.ctx.storage.get<EventData>(`event:${eventId}`);
+    if (!eventData) {
       return;
     }
 
     const heatmap: Record<string, number> = {};
-    let totalGuests = guestIds.length;
+    let totalGuests = eventData.expectedAttendees; // Use configured expected attendees, not actual guest count
     let respondedGuests = 0;
 
     // Poll each Guest DO for availability

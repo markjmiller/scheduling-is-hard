@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import Calendar from './Calendar.tsx';
 import { ApiService } from '../services/api';
@@ -48,8 +48,15 @@ export default function HostPage() {
     loadEventData();
   }, [eventId]);
 
-  // Real-time polling for availability updates
-  useEffect(() => {
+  // Real-time  // Poll interval ref for resetting when user interacts with calendar
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Reset polling interval when user changes availability
+  const resetPollInterval = useCallback(() => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+    }
+
     if (!eventId) return;
 
     const pollAvailability = async () => {
@@ -74,12 +81,21 @@ export default function HostPage() {
     };
 
     // Start polling every 10 seconds for real-time updates
-    const pollInterval = setInterval(pollAvailability, 10000);
+    pollIntervalRef.current = setInterval(pollAvailability, 10000);
+  }, [eventId, hostGuestId]);
+
+  // Poll for availability updates every 10 seconds for real-time sync
+  useEffect(() => {
+    if (!eventId || !hostGuestId) return;
+    
+    resetPollInterval();
 
     return () => {
-      clearInterval(pollInterval);
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
     };
-  }, [eventId, hostGuestId]);
+  }, [eventId, hostGuestId, resetPollInterval]);
 
   const loadEventData = async () => {
     if (!eventId) return;
@@ -192,6 +208,9 @@ export default function HostPage() {
 
     setHostSelectedDates(newSelectedDates);
 
+    // Reset poll interval to prevent server from overwriting user input
+    resetPollInterval();
+
     try {
       await ApiService.updateGuestAvailability(hostGuestId, newSelectedDates);
       
@@ -207,14 +226,22 @@ export default function HostPage() {
   };
 
   const handleHostNotAvailable = async () => {
-    if (!eventId) return;
+    if (!eventId || !hostGuestId) return;
     
     try {
-      setIsHostNotAvailable(!isHostNotAvailable);
+      const newNotAvailableState = !isHostNotAvailable;
+      setIsHostNotAvailable(newNotAvailableState);
       
-      if (!isHostNotAvailable) {
+      if (newNotAvailableState) {
         // Host indicating not available - clear all selected dates
         setHostSelectedDates([]);
+        
+        // Reset poll interval to prevent server from overwriting user input
+        resetPollInterval();
+        
+        // CRITICAL: Send empty array to server
+        await ApiService.updateGuestAvailability(hostGuestId, []);
+        
         console.log('Host indicated not available - response recorded');
       }
     } catch (error) {
@@ -325,32 +352,6 @@ export default function HostPage() {
 
       {/* Guest Management Section */}
       <section className="guest-management">
-        <h2>
-          <i className="fas fa-users"></i>
-          Guest Management
-        </h2>
-        
-        {/* Host Guest ID Display */}
-        {hostGuestId && (
-          <div className="host-guest-info">
-            <div className="host-guest-id">
-              <strong>Your Guest ID:</strong> 
-              <code className="guest-id-code">{hostGuestId}</code>
-              <a 
-                href={`/guest/${hostGuestId}`} 
-                className="guest-link-btn"
-                target="_blank" 
-                rel="noopener noreferrer"
-              >
-                View as Guest →
-              </a>
-            </div>
-            <div className="host-guest-note">
-              Use this link to access your availability as a regular participant
-            </div>
-          </div>
-        )}
-
         {/* Generate Guest Link */}
         <div className="guest-link-generator">
           <div className="input-group">
@@ -444,12 +445,23 @@ export default function HostPage() {
 
       {/* Host Availability Section */}
       <section className="host-availability">
-        <h2>
-          <i className="fas fa-calendar-check"></i>
-          Your Availability
-        </h2>
-        <p>As the host, you can also indicate your availability for the event.</p>
-        
+        {/* Host Guest ID Display */}
+        {hostGuestId && (
+          <div className="host-guest-info">
+            <div className="host-guest-id">
+              <strong>Your Guest ID:</strong> 
+              <code className="guest-id-code">{hostGuestId}</code>
+              <a 
+                href={`/guest/${hostGuestId}`} 
+                className="guest-link-btn"
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                View as Guest →
+              </a>
+            </div>
+          </div>
+        )}
         <Calendar
           selectedDates={hostSelectedDates}
           availabilityHeatmap={availabilityHeatmap}

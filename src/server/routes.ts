@@ -37,7 +37,6 @@ app.get("/docs", async (c) =>
 
 const api = new Hono<{ Bindings: Cloudflare.Env }>();
 
-// Helper function to get Event Durable Object for specific eventId
 function getEvent(env: Cloudflare.Env, eventId: string) {
   const id = env.EVENT.idFromName(eventId);
   return env.EVENT.get(id);
@@ -48,7 +47,6 @@ function getGuest(env: Cloudflare.Env, guestId: string) {
   return env.GUEST.get(id);
 }
 
-// Event endpoints
 api.post('/events', 
   validator('json', (value, c) => {
     const data = value as components['schemas']['CreateEventRequest'];
@@ -90,7 +88,6 @@ api.get('/events/:eventId',
   }
 );
 
-// Guest link generation
 api.post('/events/:eventId/guests',
   validator('param', (value, c) => {
     if (!isValidId(value.eventId)) {
@@ -117,9 +114,6 @@ api.post('/events/:eventId/guests',
   }
 );
 
-
-
-// Get event availability heatmap
 api.get('/events/:eventId/availability',
   validator('param', (value, c) => {
     if (!isValidId(value.eventId)) {
@@ -140,9 +134,6 @@ api.get('/events/:eventId/availability',
   }
 );
 
-// ===== NEW GUEST-ONLY API ENDPOINTS (NO EVENT ID EXPOSURE) =====
-
-// Get guest details by guest ID only
 api.get('/guests/:guestId',
   validator('param', (value, c) => {
     if (!isValidId(value.guestId)) {
@@ -169,7 +160,6 @@ api.get('/guests/:guestId',
   }
 );
 
-// Update guest name by guest ID only
 api.put('/guests/:guestId/name',
   validator('param', (value, c) => {
     if (!isValidId(value.guestId)) {
@@ -205,7 +195,6 @@ api.put('/guests/:guestId/name',
   }
 );
 
-// Update guest availability by guest ID only
 api.put('/guests/:guestId/availability',
   validator('param', (value, c) => {
     if (!isValidId(value.guestId)) {

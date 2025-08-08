@@ -85,6 +85,9 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
     <div className="dual-calendar-container">
       {/* Availability Calendar */}
       <div className="calendar availability-calendar">
+        <div className="calendar-title">
+          <h4 style={{ marginBottom: 0 }}><i className="fas fa-user-check"></i> Your Availability</h4>
+        </div>
         <div className="calendar-header">
           <button 
             className="nav-btn" 
@@ -115,12 +118,6 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
             Today
           </button>
         </div>
-
-        <div className="calendar-title">
-          <h4><i className="fas fa-user-check"></i> Your Availability</h4>
-          <p>Click dates you're available</p>
-        </div>
-
         <div className="calendar-grid">
           {/* Day headers */}
           {dayNames.map(day => (
@@ -182,12 +179,6 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
             <i className="fas fa-times-circle"></i>
             I am not available for any dates
           </button>
-          {isNotAvailable && (
-            <p className="not-available-message">
-              <i className="fas fa-info-circle"></i>
-              Your response has been recorded.
-            </p>
-          )}
         </div>
       )}
 
@@ -195,7 +186,6 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
       <div className="calendar mutual-calendar">
         <div className="calendar-title">
           <h4><i className="fas fa-chart-bar"></i> Mutual Calendar</h4>
-          <p>Availability heatmap from all guests</p>
           {respondedGuests !== undefined && totalGuests !== undefined && (
             <div className="response-stats-inline">
               <div className="stat-inline">

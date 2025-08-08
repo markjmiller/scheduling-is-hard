@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import Calendar from './Calendar.tsx';
 import { ApiService } from '../services/api';
@@ -27,8 +27,15 @@ export default function GuestPage() {
     loadGuestData();
   }, [guestId]);
 
-  // Real-time polling for mutual calendar updates
-  useEffect(() => {
+  // Real-time  // Poll interval ref for resetting when user interacts with calendar
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Reset polling interval when user changes availability
+  const resetPollInterval = useCallback(() => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+    }
+
     if (!eventId) return;
 
     const pollAvailability = async () => {
@@ -53,12 +60,21 @@ export default function GuestPage() {
     };
 
     // Start polling every 10 seconds for real-time mutual calendar updates
-    const pollInterval = setInterval(pollAvailability, 10000);
+    pollIntervalRef.current = setInterval(pollAvailability, 10000);
+  }, [eventId, guestId]);
+
+  // Poll for real-time availability updates
+  useEffect(() => {
+    if (!eventId || !guestId) return;
+    
+    resetPollInterval();
 
     return () => {
-      clearInterval(pollInterval);
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
     };
-  }, [eventId, guestId]);
+  }, [eventId, guestId, resetPollInterval]);
 
   const loadGuestData = async () => {
     if (!guestId) return;
@@ -115,14 +131,19 @@ export default function GuestPage() {
   };
 
   const handleNotAvailable = async () => {
-    if (!eventId || !guestId) return;
-    
+    if (!guestId) return;
+
     try {
-      setIsNotAvailable(!isNotAvailable);
+      const newNotAvailableState = !isNotAvailable;
+      setIsNotAvailable(newNotAvailableState);
       
-      if (!isNotAvailable) {
+      if (newNotAvailableState) {
         // User is indicating they're not available - clear all selected dates
         setSelectedDates([]);
+        
+        // Reset poll interval to prevent server from overwriting user input
+        resetPollInterval();
+        
         await ApiService.updateGuestAvailability(guestId, []);
         
         // Record this as a response (even though no dates selected)
@@ -142,6 +163,9 @@ export default function GuestPage() {
       : [...selectedDates, date];
 
     setSelectedDates(newSelectedDates);
+
+    // Reset poll interval to prevent server from overwriting user input
+    resetPollInterval();
 
     // Live update to server
     try {
