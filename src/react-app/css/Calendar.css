@@ -367,64 +367,7 @@
   border-radius: 2px;
 }
 
-/* Heatmap Legend */
-.heatmap-legend {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  padding: 1rem;
-  background: #f7fafc;
-  border-radius: 6px;
-  margin-top: 1rem;
-  font-size: 0.75rem;
-  flex-wrap: wrap;
-}
 
-.legend-title {
-  font-weight: 600;
-  color: #4a5568;
-  margin-right: 0.5rem;
-}
-
-.legend-items {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.legend-color {
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.legend-color.availability-none {
-  background: #f7fafc;
-}
-
-.legend-color.availability-low {
-  background: #fed7d7;
-}
-
-.legend-color.availability-medium {
-  background: #feebc8;
-}
-
-.legend-color.availability-high {
-  background: #c6f6d5;
-}
-
-.legend-color.availability-very-high {
-  background: #9ae6b4;
-}
 
 /* Calendar Footer */
 .calendar-footer {

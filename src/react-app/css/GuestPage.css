@@ -215,90 +215,9 @@
   color: #38a169;
 }
 
-/* Availability Stats */
-.availability-stats {
-  margin-top: 1.5rem;
-  background: white;
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
 
-.stats-card {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
 
-.stat {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
 
-.stat i {
-  font-size: 1.5rem;
-  color: #667eea;
-  width: 2rem;
-  text-align: center;
-}
-
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #2d3748;
-  display: block;
-}
-
-.stat-label {
-  color: #718096;
-  font-size: 0.875rem;
-}
-
-/* Heatmap Legend */
-.heatmap-legend {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.legend-label {
-  color: #4a5568;
-  font-weight: 500;
-  font-size: 0.875rem;
-}
-
-.legend-scale {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.legend-color {
-  width: 1rem;
-  height: 1rem;
-  border-radius: 2px;
-  border: 1px solid #e2e8f0;
-}
-
-.legend-low {
-  background: rgba(102, 126, 234, 0.2);
-}
-
-.legend-high {
-  background: rgba(102, 126, 234, 0.8);
-}
-
-.legend-item span {
-  font-size: 0.75rem;
-  color: #718096;
-}
 
 /* Responsive Design */
 @media (min-width: 768px) {
@@ -316,15 +235,7 @@
     padding: 2rem;
   }
 
-  .availability-stats {
-    padding: 2rem;
-  }
 
-  .stats-card {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
 
   .name-input-group {
     max-width: 400px;

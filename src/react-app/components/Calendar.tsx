@@ -14,7 +14,13 @@ interface CalendarProps {
 export default function Calendar({ selectedDates, availabilityHeatmap, onDateToggle, respondedGuests, totalGuests, isNotAvailable, onNotAvailableToggle }: CalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  // Get the first day of the month and how many days it has
+  // Constants
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  // Calendar date calculations
   const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
   const lastDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
   const daysInMonth = lastDayOfMonth.getDate();
@@ -27,54 +33,51 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
     return formatDate(date);
   });
 
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-  function formatDate(date: Date): string {
-    return date.toISOString().split('T')[0];
-  }
-
-  function goToPreviousMonth() {
+  // Navigation functions
+  const goToPreviousMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
-  }
+  };
 
-  function goToNextMonth() {
+  const goToNextMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
-  }
+  };
 
-  function goToToday() {
+  const goToToday = () => {
     setCurrentMonth(new Date());
-  }
+  };
 
-  function getAvailabilityLevel(date: string): number {
+  // Utility functions
+  const formatDate = (date: Date): string => {
+    return date.toISOString().split('T')[0];
+  };
+
+  const isPastDate = (date: string): boolean => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dateObj = new Date(date);
+    return dateObj < today;
+  };
+
+  // Availability calculation functions
+  const getAvailabilityLevel = (date: string): number => {
     return availabilityHeatmap.get(date) || 0;
-  }
+  };
 
-  function getGuestCountForDate(date: string): number {
+  const getGuestCountForDate = (date: string): number => {
     const level = availabilityHeatmap.get(date) || 0;
-    // Calculate actual guest count based on availability level and total responses
     const actualResponders = respondedGuests || 1;
     return Math.round(level * actualResponders);
-  }
+  };
 
-  function getAvailabilityClass(availabilityLevel: number): string {
+  const getAvailabilityClass = (availabilityLevel: number): string => {
     if (availabilityLevel === 0) return 'availability-none';
     if (availabilityLevel <= 0.25) return 'availability-low';
     if (availabilityLevel <= 0.5) return 'availability-medium';
     if (availabilityLevel <= 0.75) return 'availability-high';
     return 'availability-very-high';
-  }
+  };
 
-  function isPastDate(date: string): boolean {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const dateObj = new Date(date);
-    return dateObj < today;
-  }
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
     <div className="dual-calendar-container">

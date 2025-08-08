@@ -14,8 +14,6 @@ export default function GuestPage() {
   const [guest, setGuest] = useState<Guest | null>(null);
   const [guestName, setGuestName] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
-  // TODO: Add hasSubmittedName state to track if guest has already submitted their name
-  // TODO: Once a guest submits a name, they cannot change it (only host can edit guest names)
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [availabilityHeatmap, setAvailabilityHeatmap] = useState<Map<string, number>>(new Map());
   const [totalGuests, setTotalGuests] = useState(0);
@@ -64,13 +62,14 @@ export default function GuestPage() {
   };
 
   const handleNameSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!guestName.trim() || !eventId || !guestId) return;
 
     try {
       await ApiService.updateGuestName(eventId, guestId, guestName.trim());
       setIsEditingName(false);
     } catch (error) {
-      console.error('Error toggling date:', error);
+      console.error('Error updating guest name:', error);
     }
   };
 
