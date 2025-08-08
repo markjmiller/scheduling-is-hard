@@ -48,8 +48,8 @@ export class Event extends DurableObject<Env> {
         await this.updateAggregateAvailability(eventId);
       }
       
-      // Set next alarm for 5 seconds
-      await this.ctx.storage.setAlarm(Date.now() + 5000);
+      // Set next alarm for 1 seconds
+      await this.ctx.storage.setAlarm(Date.now() + 1000);
     } catch (error) {
       console.error('Event DO alarm error:', error);
       // Retry in 60 seconds on error
@@ -69,7 +69,10 @@ export class Event extends DurableObject<Env> {
     }
 
     const heatmap: Record<string, number> = {};
-    let totalGuests = eventData.expectedAttendees; // Use configured expected attendees, not actual guest count
+    // Use configured expected attendees if it's a valid number, otherwise set to undefined for "unknown" 
+    let totalGuests = typeof eventData.expectedAttendees === 'number' 
+      ? eventData.expectedAttendees 
+      : undefined; // Don't use actual guest count for "unknown" scenario
     let respondedGuests = 0;
 
     // Poll each Guest DO for availability
@@ -138,21 +141,33 @@ export class Event extends DurableObject<Env> {
     // Store event data
     await this.ctx.storage.put(`event:${eventId}`, eventData);
     
-    // Initialize guests list with host guest ID
-    await this.ctx.storage.put(`event:${eventId}:guests`, { [hostGuestId]: true });
-    
-    // ✅ CRITICAL FIX: Create Guest DO for the host
-    console.log(`🏠 [EVENT] Creating Guest DO for host: ${hostGuestId}`);
+    // ✅ FIX: Create Guest DO for the host first
     const hostGuestDO = this.env.GUEST.get(this.env.GUEST.idFromName(hostGuestId));
     await hostGuestDO.updateGuest(hostGuestId, eventId, {
       name: "Host" // Default host name
     });
-    console.log(`✅ [EVENT] Host Guest DO created successfully: ${hostGuestId}`);
     
-    // Initialize empty aggregate availability cache
+    // ✅ FIX: Store host as full GuestData object (not just boolean flag)
+    const hostGuestData: GuestData = {
+      id: hostGuestId,
+      eventId: eventId,
+      name: "Host",
+      createdAt: now,
+      updatedAt: now,
+      // availability is undefined initially (host hasn't responded yet)
+    };
+    
+    // Initialize guests list with proper GuestData format
+    await this.ctx.storage.put(`event:${eventId}:guests`, { [hostGuestId]: hostGuestData });
+    
+    // Initialize aggregate availability cache with correct totalGuests based on expectedAttendees
+    const initialTotalGuests = typeof request.expectedAttendees === 'number' 
+      ? request.expectedAttendees 
+      : undefined; // undefined for "unknown" scenario
+    
     await this.ctx.storage.put(`event:${eventId}:availability_cache`, {
       heatmap: {},
-      totalGuests: 0,
+      totalGuests: initialTotalGuests,
       respondedGuests: 0,
       lastUpdated: now
     });
@@ -212,10 +227,15 @@ export class Event extends DurableObject<Env> {
       updatedAt: now
     };
 
-    // Get current guests and add new guest
+    // Store guest data in Event DO (for event management)
     const guests = await this.ctx.storage.get<Record<string, GuestData>>(`event:${eventId}:guests`) || {};
     guests[guestId] = guestData;
     await this.ctx.storage.put(`event:${eventId}:guests`, guests);
+
+    // ALSO store guest data in Guest DO (for individual guest access)
+    const guestDOId = this.env.GUEST.idFromName(guestId);
+    const guestDO = this.env.GUEST.get(guestDOId);
+    await guestDO.updateGuest(guestId, eventId, guestData);
 
     return {
       guestId: guestId,
@@ -309,5 +329,18 @@ export class Event extends DurableObject<Env> {
   async getEventGuests(eventId: string): Promise<GuestData[]> {
     const guests = await this.ctx.storage.get<Record<string, GuestData>>(`event:${eventId}:guests`) || {};
     return Object.values(guests);
+  }
+
+  // Remove guest from event
+  async removeGuest(eventId: string, guestId: string): Promise<void> {
+    const guests = await this.ctx.storage.get<Record<string, GuestData>>(`event:${eventId}:guests`) || {};
+    
+    if (guests[guestId]) {
+      delete guests[guestId];
+      await this.ctx.storage.put(`event:${eventId}:guests`, guests);
+      
+      // Trigger availability recalculation
+      await this.updateAggregateAvailability(eventId);
+    }
   }
 }

@@ -17,6 +17,7 @@
   border-bottom: 1px solid #e1e8ed;
   box-sizing: border-box;
   margin: 1rem;
+  border-radius: 1rem;
 }
 
 .app-title {
@@ -35,7 +36,7 @@
 
 .app-main {
   background: #f8f9fa;
-  padding: 1.5rem 1rem;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -79,8 +80,8 @@
 .event-details {
   background: #f8f9fa;
   border-radius: 8px;
-  padding: 1.5rem;
   text-align: left;
+  width: 100%;
 }
 
 .event-details h3 {

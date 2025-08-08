@@ -59,8 +59,8 @@ export default function GuestPage() {
       }
     };
 
-    // Start polling every 10 seconds for real-time mutual calendar updates
-    pollIntervalRef.current = setInterval(pollAvailability, 10000);
+    // Start polling every 1 second for real-time mutual calendar updates
+    pollIntervalRef.current = setInterval(pollAvailability, 1000);
   }, [eventId, guestId]);
 
   // Poll for real-time availability updates
@@ -219,12 +219,7 @@ export default function GuestPage() {
   return (
     <div className="guest-page">
       <header className="guest-header">
-        <div className="event-info">
-          <h1>{event.name}</h1>
-          <p>{event.description}</p>
-        </div>
-
-        {isEditingName ? (
+      {isEditingName ? (
           <form className="name-form" onSubmit={handleNameSubmit}>
             <div className="name-input-group">
               <input
@@ -240,7 +235,7 @@ export default function GuestPage() {
                 <i className="fas fa-check"></i>
               </button>
             </div>
-            <p className="name-help">Please enter your name to continue</p>
+            <p className="name-help">Guest Id: {guestId}</p>
           </form>
         ) : (
           <div className="guest-info">
@@ -256,6 +251,10 @@ export default function GuestPage() {
             </p>
           </div>
         )}
+        <div className="event-info">
+          <h1>{event.name}</h1>
+          <p>{event.description}</p>
+        </div>
       </header>
 
       <main className="guest-main">

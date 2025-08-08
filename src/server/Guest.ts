@@ -77,4 +77,9 @@ export class Guest extends DurableObject<Env> {
     
     return updatedGuest;
   }
+
+  // Delete guest data
+  async deleteGuest(guestId: string): Promise<void> {
+    await this.ctx.storage.delete(`guest:${guestId}`);
+  }
 }

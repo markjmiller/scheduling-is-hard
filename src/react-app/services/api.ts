@@ -50,7 +50,7 @@ export class ApiService {
 
   // Generate guest link
   static async generateGuestLink(eventId: string, guestName?: string): Promise<GuestLink> {
-    const response = await fetch(`${API_BASE}/events/${eventId}/generate-guest`, {
+    const response = await fetch(`${API_BASE}/events/${eventId}/guests`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ guestName }),
@@ -108,6 +108,28 @@ export class ApiService {
     
     if (!response.ok) {
       throw new Error(`Failed to update guest availability: ${response.statusText}`);
+    }
+  }
+
+  // Get event guests
+  static async getEventGuests(eventId: string): Promise<any[]> {
+    const response = await fetch(`${API_BASE}/events/${eventId}/guests`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to get event guests: ${response.statusText}`);
+    }
+    
+    return response.json();
+  }
+
+  // Delete guest
+  static async deleteGuest(guestId: string): Promise<void> {
+    const response = await fetch(`${API_BASE}/guests/${guestId}`, {
+      method: 'DELETE',
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to delete guest: ${response.statusText}`);
     }
   }
 }

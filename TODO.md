@@ -1,7 +1,9 @@
 # Scheduling Is Hard TODO
 
-- [ ] Clean up any unnecessary debug logging.
-- [ ] Change: guests and hosts should be able to change their name whenever they want. Also host should be able to edit their name from the host page.
-- [ ] Once you click "I am not available for any dates", it should stay toggled until you click some date cells.
-- [ ] If the event has an unknown number of guests, the # of respondents should just show "# responded" instead of "# of unknown (expected) responded"
-- [ ] Implement the generate guest link functionality from the host page.
+- [ ] Clean up any unnecessary debug logging and comments that are self-evident
+- [ ] There should be a way to filter guests by name on the mutual calendar
+- [ ] The "Edit event" save doesn't save the event. If not already, make sure this is represented as a PATCH request to the API and update the OpenAPI spec accordingly, please.
+- [ ] The Create New Event page should have an input for host name. Please make sure that's recognized in the OpenAPI spec and that works with the guest ID creation for the host.
+- [ ] You should be able to select today's date in the availability calendar
+- [ ] Mobile view is cutting off the major components. I wonder if this is because they have min width and the media queries don't have the right values
+- [ ] Double check there's parity between the OpenAPI spec and routes. Please update and clean up anything as necessary. Especially check if there's anything unused.

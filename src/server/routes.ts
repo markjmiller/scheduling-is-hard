@@ -186,7 +186,13 @@ api.put('/guests/:guestId/name',
         return c.json({ error: 'Guest not found' }, 404);
       }
       
+      // Update Guest DO
       const updatedGuest = await guestDO.updateGuest(guestId, guestData.eventId, { name: name.trim() });
+      
+      // Also update Event DO to keep both storage locations in sync
+      const eventDO = getEvent(c.env, guestData.eventId);
+      await eventDO.updateGuestName(guestData.eventId, guestId, name.trim());
+      
       return c.json(updatedGuest);
     } catch (error) {
       console.error(`Failed to update name for guest ${guestId}:`, error);
@@ -221,11 +227,78 @@ api.put('/guests/:guestId/availability',
         return c.json({ error: 'Guest not found' }, 404);
       }
       
+      // Update Guest DO
       const updatedGuest = await guestDO.updateGuest(guestId, guestData.eventId, { availability });
+      
+      // Also update Event DO to keep both storage locations in sync
+      const eventDO = getEvent(c.env, guestData.eventId);
+      await eventDO.updateGuestAvailability(guestData.eventId, guestId, availability);
+      
       return c.json(updatedGuest);
     } catch (error) {
       console.error(`Failed to update availability for guest ${guestId}:`, error);
       return c.json({ error: 'Failed to update availability' }, 400);
+    }
+  }
+);
+
+api.get('/events/:eventId/guests',
+  validator('param', (value, c) => {
+    if (!isValidId(value.eventId)) {
+      return c.text('Invalid event ID', 400);
+    }
+    return value;
+  }),
+  async (c) => {
+    const { eventId } = c.req.valid('param');
+    const eventDO = getEvent(c.env, eventId);
+    
+    try {
+      const guests = await eventDO.getEventGuests(eventId);
+      
+      // Transform guests to include hasResponded status
+      const guestsWithStatus = guests.map(guest => ({
+        ...guest,
+        hasResponded: guest.availability !== undefined && guest.availability !== null
+      }));
+      
+      return c.json(guestsWithStatus);
+    } catch (error) {
+      console.error(`Failed to get guests for event ${eventId}:`, error);
+      return c.json({ error: 'Failed to get event guests' }, 500);
+    }
+  }
+);
+
+api.delete('/guests/:guestId',
+  validator('param', (value, c) => {
+    if (!isValidId(value.guestId)) {
+      return c.text('Invalid guest ID', 400);
+    }
+    return value;
+  }),
+  async (c) => {
+    const { guestId } = c.req.valid('param');
+    
+    try {
+      const guestDO = getGuest(c.env, guestId);
+      const guestData = await guestDO.getGuest(guestId);
+      
+      if (!guestData) {
+        return c.json({ error: 'Guest not found' }, 404);
+      }
+      
+      // Delete from Guest DO
+      await guestDO.deleteGuest(guestId);
+      
+      // Also remove from Event DO's guest list
+      const eventDO = getEvent(c.env, guestData.eventId);
+      await eventDO.removeGuest(guestData.eventId, guestId);
+      
+      return c.json({ message: 'Guest deleted successfully' });
+    } catch (error) {
+      console.error(`Failed to delete guest ${guestId}:`, error);
+      return c.json({ error: 'Failed to delete guest' }, 500);
     }
   }
 );

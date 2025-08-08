@@ -358,6 +358,86 @@
   border-radius: 2px;
 }
 
+/* Date Indicators - Host availability and 100% fraction icons */
+.date-indicators {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  align-items: center;
+}
+
+.host-available-icon {
+  font-size: 0.625rem;
+  color: #4299e1;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2px;
+  border-radius: 2px;
+  border: 1px solid rgba(66, 153, 225, 0.3);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.perfect-availability-icon {
+  font-size: 0.625rem;
+  color: #f6ad55;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2px;
+  border-radius: 2px;
+  border: 1px solid rgba(246, 173, 85, 0.3);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+  0%, 100% { 
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+}
+
+/* Mutual Calendar Legend */
+.mutual-calendar-legend {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.legend-items {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.legend-icon-demo {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: white;
+}
+
+.legend-text {
+  font-size: 0.875rem;
+  color: #4a5568;
+  font-weight: 500;
+}
+
 
 
 /* Calendar Footer */

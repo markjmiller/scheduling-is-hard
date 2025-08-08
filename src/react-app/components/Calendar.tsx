@@ -9,9 +9,10 @@ interface CalendarProps {
   totalGuests?: number;
   isNotAvailable?: boolean;
   onNotAvailableToggle?: () => void;
+  showHostLegend?: boolean;
 }
 
-export default function Calendar({ selectedDates, availabilityHeatmap, onDateToggle, respondedGuests, totalGuests, isNotAvailable, onNotAvailableToggle }: CalendarProps) {
+export default function Calendar({ selectedDates, availabilityHeatmap, onDateToggle, respondedGuests, totalGuests, isNotAvailable, onNotAvailableToggle, showHostLegend = true }: CalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   // Constants
@@ -175,6 +176,7 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
           <button 
             className={`not-available-btn ${isNotAvailable ? 'active' : ''}`}
             onClick={onNotAvailableToggle}
+            disabled={isNotAvailable}
           >
             <i className="fas fa-times-circle"></i>
             I am not available for any dates
@@ -186,11 +188,16 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
       <div className="calendar mutual-calendar">
         <div className="calendar-title">
           <h4><i className="fas fa-chart-bar"></i> Mutual Calendar</h4>
-          {respondedGuests !== undefined && totalGuests !== undefined && (
+          {respondedGuests !== undefined && (
             <div className="response-stats-inline">
               <div className="stat-inline">
                 <i className="fas fa-users"></i>
-                <span className="stat-text">{respondedGuests} of {totalGuests} (expected) responded</span>
+                <span className="stat-text">
+                  {totalGuests !== undefined && totalGuests >= 0 
+                    ? `${respondedGuests} of ${totalGuests} (expected) responded`
+                    : `${respondedGuests} responded`
+                  }
+                </span>
               </div>
             </div>
           )}
@@ -216,6 +223,8 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
             const availabilityClass = getAvailabilityClass(availabilityLevel);
             const isPast = isPastDate(date);
             const isToday = date === formatDate(new Date());
+            const isHostAvailable = selectedDates.includes(date);
+            const is100Percent = availabilityLevel === 1.0;
 
             return (
               <div
@@ -224,7 +233,7 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
                 title={
                   isPast 
                     ? 'Past date' 
-                    : `${getGuestCountForDate(date)} of ${respondedGuests || 'unknown'} guests available`
+                    : `${getGuestCountForDate(date)} of ${respondedGuests || 'unknown'} guests available${isHostAvailable ? ' (Host available)' : ''}${is100Percent ? ' - 100% available!' : ''}`
                 }
               >
                 <span className="day-number">{dayOfMonth}</span>
@@ -233,11 +242,40 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
                     {getGuestCountForDate(date)}/{respondedGuests || '?'}
                   </span>
                 )}
+                
+                {/* Host availability and 100% indicators */}
+                <div className="date-indicators">
+                  {isHostAvailable && !isPast && !is100Percent && (
+                    <i className="fas fa-user host-available-icon" title="Host is available"></i>
+                  )}
+                  {is100Percent && availabilityLevel > 0 && !isPast && (
+                    <i className="fas fa-star perfect-availability-icon" title="100% availability!"></i>
+                  )}
+                </div>
               </div>
             );
           })}
         </div>
 
+        {/* Icons Legend */}
+        <div className="mutual-calendar-legend">
+          <div className="legend-items">
+            {showHostLegend && (
+              <div className="legend-item">
+                <div className="legend-icon-demo">
+                  <i className="fas fa-user host-available-icon"></i>
+                </div>
+                <span className="legend-text">Host is available</span>
+              </div>
+            )}
+            <div className="legend-item">
+              <div className="legend-icon-demo">
+                <i className="fas fa-star perfect-availability-icon"></i>
+              </div>
+              <span className="legend-text">100% availability</span>
+            </div>
+          </div>
+        </div>
 
       </div>
     </div>
