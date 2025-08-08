@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Scheduling Is Hard API
-  description: API for app for mutually finding availability with any number of people.
+  description: API for mutually finding availability with any number of people.
   version: 1.0.0
   license:
     name: Apache 2.0
@@ -13,26 +13,576 @@ servers:
       cloudflare-workers-subdomain:
         default: replace-me
 
-security:
-  - BasicAuth: []
-
 paths:
-  /example:
+  /events:
+    post:
+      summary: Create a new event
+      description: Create a new scheduling event with name, description, and expected attendee count
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+      responses:
+        201:
+          description: Event created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        400:
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /events/{eventId}:
     get:
+      summary: Get event details
+      description: Retrieve details of a specific event
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          description: 8-character alphanumeric event identifier
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9]{8}$'
       responses:
         200:
-          description: Example response
+          description: Event details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
         404:
-          description: Not found
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    put:
+      summary: Update event details
+      description: Update name, description, or expected attendee count for an event
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          description: 8-character alphanumeric event identifier
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9]{8}$'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventRequest'
+      responses:
+        200:
+          description: Event updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        400:
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /events/{eventId}/guests:
+    post:
+      summary: Generate unique guest link
+      description: Create a new unique guest identifier and return the guest URL
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          description: 8-character alphanumeric event identifier
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9]{8}$'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGuestRequest'
+      responses:
+        201:
+          description: Guest link generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuestLink'
+        404:
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /events/{eventId}/guests/{guestId}:
+    get:
+      summary: Get guest and event information
+      description: Retrieve guest information and associated event details for the guest interface
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          description: 8-character alphanumeric event identifier
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9]{8}$'
+        - name: guestId
+          in: path
+          required: true
+          description: 8-character alphanumeric guest identifier
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9]{8}$'
+      responses:
+        200:
+          description: Guest and event information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuestEventInfo'
+        404:
+          description: Event or guest not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    put:
+      summary: Update guest information
+      description: Update guest name and other details
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          description: 8-character alphanumeric event identifier
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9]{8}$'
+        - name: guestId
+          in: path
+          required: true
+          description: 8-character alphanumeric guest identifier
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9]{8}$'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGuestRequest'
+      responses:
+        200:
+          description: Guest updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Guest'
+        400:
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Event or guest not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    delete:
+      summary: Delete a guest
+      description: Remove a guest and their availability data from the event
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          description: 8-character alphanumeric event identifier
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9]{8}$'
+        - name: guestId
+          in: path
+          required: true
+          description: 8-character alphanumeric guest identifier
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9]{8}$'
+      responses:
+        204:
+          description: Guest deleted successfully
+        404:
+          description: Event or guest not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /events/{eventId}/guests/{guestId}/availability:
+    post:
+      summary: Submit or update guest availability
+      description: Live update guest availability for specific dates
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          description: 8-character alphanumeric event identifier
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9]{8}$'
+        - name: guestId
+          in: path
+          required: true
+          description: 8-character alphanumeric guest identifier
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9]{8}$'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AvailabilitySubmission'
+      responses:
+        200:
+          description: Availability updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityResponse'
+        400:
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Event or guest not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /events/{eventId}/availability:
+    get:
+      summary: Get aggregated availability for heatmap
+      description: Retrieve all guest availability data for displaying the calendar heatmap
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          description: 8-character alphanumeric event identifier
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9]{8}$'
+      responses:
+        200:
+          description: Availability data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityHeatmap'
+        404:
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
 components:
-  securitySchemes:
-    BasicAuth:
-      type: http
-      scheme: basic
   schemas:
-    ExampleResponse:
+    Event:
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - expectedAttendees
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          pattern: '^[A-Za-z0-9]{8}$'
+          description: 8-character alphanumeric event identifier
+          example: "ABC123XY"
+        name:
+          type: string
+          maxLength: 200
+          description: Event name
+          example: "Team Planning Meeting"
+        description:
+          type: string
+          maxLength: 2000
+          description: Long-form event description
+          example: "Let's coordinate our availability for the quarterly planning session"
+        expectedAttendees:
+          oneOf:
+            - type: integer
+              minimum: 1
+              description: Expected number of attendees (minimum 1 for host)
+              example: 5
+            - type: string
+              enum: ["unknown"]
+              description: Unknown number of attendees
+        createdAt:
+          type: string
+          format: date-time
+          description: Event creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Event last update timestamp
+    
+    CreateEventRequest:
+      type: object
+      required:
+        - name
+        - description
+        - expectedAttendees
+      properties:
+        name:
+          type: string
+          maxLength: 200
+          description: Event name
+          example: "Team Planning Meeting"
+        description:
+          type: string
+          maxLength: 2000
+          description: Long-form event description
+          example: "Let's coordinate our availability for the quarterly planning session"
+        expectedAttendees:
+          oneOf:
+            - type: integer
+              minimum: 1
+              description: Expected number of attendees (minimum 1 for host)
+              example: 5
+            - type: string
+              enum: ["unknown"]
+              description: Unknown number of attendees
+    
+    UpdateEventRequest:
       type: object
       properties:
+        name:
+          type: string
+          maxLength: 200
+          description: Event name
+          example: "Team Planning Meeting - Updated"
+        description:
+          type: string
+          maxLength: 2000
+          description: Long-form event description
+          example: "Updated description for the quarterly planning session"
+        expectedAttendees:
+          oneOf:
+            - type: integer
+              minimum: 1
+              description: Expected number of attendees (minimum 1 for host)
+              example: 8
+            - type: string
+              enum: ["unknown"]
+              description: Unknown number of attendees
+    
+    Guest:
+      type: object
+      required:
+        - id
+        - eventId
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          pattern: '^[A-Za-z0-9]{8}$'
+          description: 8-character alphanumeric guest identifier
+          example: "DEF456ZW"
+        eventId:
+          type: string
+          pattern: '^[A-Za-z0-9]{8}$'
+          description: Associated event identifier
+          example: "ABC123XY"
+        name:
+          type: string
+          maxLength: 100
+          description: Guest name
+          example: "John Doe"
+        createdAt:
+          type: string
+          format: date-time
+          description: Guest creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Guest last update timestamp
+    
+    GuestLink:
+      type: object
+      required:
+        - guestId
+        - url
+      properties:
+        guestId:
+          type: string
+          pattern: '^[A-Za-z0-9]{8}$'
+          description: 8-character alphanumeric guest identifier
+          example: "DEF456ZW"
+        url:
+          type: string
+          format: uri
+          description: Unique URL for guest to submit availability
+          example: "/event/ABC123XY/guest/DEF456ZW"
+    
+    GuestEventInfo:
+      type: object
+      required:
+        - guest
+        - event
+      properties:
+        guest:
+          $ref: '#/components/schemas/Guest'
+        event:
+          $ref: '#/components/schemas/Event'
+    
+    CreateGuestRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          description: Optional guest name to pre-populate
+          example: "John Doe"
+    
+    UpdateGuestRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          description: Guest name
+          example: "John Doe"
+    
+    AvailabilitySubmission:
+      type: object
+      required:
+        - dates
+      properties:
+        dates:
+          type: array
+          items:
+            type: string
+            format: date
+            description: Available date in YYYY-MM-DD format
+          description: Array of dates the guest is available
+          example: ["2024-01-15", "2024-01-16", "2024-01-18"]
+    
+    AvailabilityResponse:
+      type: object
+      required:
+        - guestId
+        - dates
+        - updatedAt
+      properties:
+        guestId:
+          type: string
+          pattern: '^[A-Za-z0-9]{8}$'
+          description: Guest identifier
+          example: "DEF456ZW"
+        dates:
+          type: array
+          items:
+            type: string
+            format: date
+          description: Updated available dates
+          example: ["2024-01-15", "2024-01-16", "2024-01-18"]
+        updatedAt:
+          type: string
+          format: date-time
+          description: Availability last update timestamp
+    
+    AvailabilityHeatmap:
+      type: object
+      required:
+        - eventId
+        - totalGuests
+        - respondedGuests
+        - availability
+      properties:
+        eventId:
+          type: string
+          pattern: '^[A-Za-z0-9]{8}$'
+          description: Event identifier
+          example: "ABC123XY"
+        totalGuests:
+          type: integer
+          minimum: 0
+          description: Total number of guests invited
+          example: 5
+        respondedGuests:
+          type: integer
+          minimum: 0
+          description: Number of guests who have submitted availability
+          example: 3
+        availability:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              available:
+                type: integer
+                minimum: 0
+                description: Number of guests available on this date
+              total:
+                type: integer
+                minimum: 0
+                description: Total guests who have responded
+          description: Date-keyed availability counts for heatmap
+          example:
+            "2024-01-15":
+              available: 3
+              total: 3
+            "2024-01-16":
+              available: 2
+              total: 3
+            "2024-01-17":
+              available: 1
+              total: 3
+    
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error type
+          example: "NOT_FOUND"
         message:
           type: string
+          description: Human-readable error message
+          example: "Event not found"
+        details:
+          type: object
+          description: Additional error details
+          additionalProperties: true
