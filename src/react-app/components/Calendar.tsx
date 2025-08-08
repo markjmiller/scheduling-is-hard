@@ -20,6 +20,18 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
+  // Utility functions (defined early to avoid hoisting issues)
+  const formatDate = (date: Date): string => {
+    return date.toISOString().split('T')[0];
+  };
+
+  const isPastDate = (date: string): boolean => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dateObj = new Date(date);
+    return dateObj < today;
+  };
+
   // Calendar date calculations
   const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
   const lastDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
@@ -46,17 +58,7 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
     setCurrentMonth(new Date());
   };
 
-  // Utility functions
-  const formatDate = (date: Date): string => {
-    return date.toISOString().split('T')[0];
-  };
 
-  const isPastDate = (date: string): boolean => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const dateObj = new Date(date);
-    return dateObj < today;
-  };
 
   // Availability calculation functions
   const getAvailabilityLevel = (date: string): number => {
