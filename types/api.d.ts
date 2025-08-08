@@ -485,6 +485,11 @@ export interface components {
              * @example Let's coordinate our availability for the quarterly planning session
              */
             description: string;
+            /**
+             * @description Host's guest ID for availability participation
+             * @example HOST123X
+             */
+            hostGuestId: string;
             expectedAttendees: number | "unknown";
             /**
              * Format: date-time

@@ -11,7 +11,7 @@ type Guest = components["schemas"]["Guest"];
 export default function GuestPage() {
   const { eventId, guestId } = useParams<{ eventId: string; guestId: string }>();
   const [event, setEvent] = useState<Event | null>(null);
-  const [guest, setGuest] = useState<Guest | null>(null);
+  const [, setGuest] = useState<Guest | null>(null);
   const [guestName, setGuestName] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
@@ -25,6 +25,31 @@ export default function GuestPage() {
   useEffect(() => {
     loadGuestData();
   }, [eventId, guestId]);
+
+  // Real-time polling for mutual calendar updates
+  useEffect(() => {
+    if (!eventId) return;
+
+    const pollAvailability = async () => {
+      try {
+        // Only poll availability data for mutual calendar updates
+        const heatmapData = await ApiService.getEventAvailability(eventId);
+        setAvailabilityHeatmap(new Map(Object.entries(heatmapData.heatmap)));
+        setTotalGuests(heatmapData.totalGuests);
+        setRespondedGuests(heatmapData.respondedGuests);
+      } catch (err) {
+        // Silently fail to avoid disrupting UX with polling errors
+        console.warn('Failed to poll availability updates:', err);
+      }
+    };
+
+    // Start polling every 10 seconds for real-time mutual calendar updates
+    const pollInterval = setInterval(pollAvailability, 10000);
+
+    return () => {
+      clearInterval(pollInterval);
+    };
+  }, [eventId]);
 
   const loadGuestData = async () => {
     if (!eventId || !guestId) return;

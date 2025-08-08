@@ -1,4 +1,4 @@
-// Stubbed API service for frontend development
+// Real API service for production
 import type { components } from "../../../types/api";
 
 type Event = components["schemas"]["Event"];
@@ -17,138 +17,97 @@ interface EventAvailability {
   respondedGuests: number;
 }
 
-// Generate random 8-character alphanumeric ID
-function generateId(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < 8; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
-
-// Simulate API delay
-function delay(ms: number = 500): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+// API base URL
+const API_BASE = '/api';
 
 export class ApiService {
 
-  // Stubbed: Create a new event
+  // Create a new event
   static async createEvent(eventData: CreateEventRequest): Promise<Event> {
-    await delay();
+    const response = await fetch(`${API_BASE}/events`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(eventData),
+    });
     
-    const event: Event = {
-      id: generateId(),
-      name: eventData.name,
-      description: eventData.description,
-      expectedAttendees: eventData.expectedAttendees,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    console.log('🔄 [STUBBED] Creating event:', event);
-    return event;
-  }
-
-  // Stubbed: Get event details
-  static async getEvent(eventId: string): Promise<Event> {
-    await delay();
-    
-    const event: Event = {
-      id: eventId,
-      name: "Sample Event",
-      description: "This is a stubbed event for UI development",
-      expectedAttendees: 5,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    console.log('🔄 [STUBBED] Getting event:', event);
-    return event;
-  }
-
-  // Stubbed: Generate guest link
-  static async generateGuestLink(eventId: string, guestName?: string): Promise<GuestLink> {
-    await delay();
-    
-    const guestId = generateId();
-    const guestLink: GuestLink = {
-      guestId,
-      url: `/event/${eventId}/guest/${guestId}`,
-    };
-
-    console.log('🔄 [STUBBED] Generating guest link:', guestLink, guestName ? `for ${guestName}` : '');
-    return guestLink;
-  }
-
-  // Stubbed: Get guest details
-  static async getGuest(eventId: string, guestId: string): Promise<Guest> {
-    await delay();
-    
-    const guest: Guest = {
-      id: guestId,
-      eventId: eventId,
-      name: Math.random() > 0.5 ? 'Sample Guest' : '', // Sometimes no name provided
-      availability: Math.random() > 0.5 ? ['2024-08-08', '2024-08-09', '2024-08-10'] : [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    console.log('🔄 [STUBBED] Getting guest:', guest);
-    return guest;
-  }
-
-  // Stubbed: Get event availability heatmap
-  static async getEventAvailability(eventId: string): Promise<EventAvailability> {
-    await delay();
-    
-    // Generate sample heatmap data for the next 30 days
-    const heatmap: Record<string, number> = {};
-    const today = new Date();
-    
-    for (let i = 0; i < 30; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      const dateStr = date.toISOString().split('T')[0];
-      // Random availability between 0 and 1
-      heatmap[dateStr] = Math.random();
+    if (!response.ok) {
+      throw new Error(`Failed to create event: ${response.statusText}`);
     }
-
-    const availability: EventAvailability = {
-      heatmap,
-      totalGuests: 5,
-      respondedGuests: 3,
-    };
-
-    console.log('🔄 [STUBBED] Getting event availability:', availability);
-    return availability;
+    
+    return response.json();
   }
 
-  // Stubbed: Update guest name
+  // Get event details
+  static async getEvent(eventId: string): Promise<Event> {
+    const response = await fetch(`${API_BASE}/events/${eventId}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to get event: ${response.statusText}`);
+    }
+    
+    return response.json();
+  }
+
+  // Generate guest link
+  static async generateGuestLink(eventId: string, guestName?: string): Promise<GuestLink> {
+    const response = await fetch(`${API_BASE}/events/${eventId}/generate-guest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ guestName }),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to generate guest link: ${response.statusText}`);
+    }
+    
+    return response.json();
+  }
+
+  // Get guest details
+  static async getGuest(eventId: string, guestId: string): Promise<Guest> {
+    const response = await fetch(`${API_BASE}/events/${eventId}/guests/${guestId}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to get guest: ${response.statusText}`);
+    }
+    
+    return response.json();
+  }
+
+  // Get event availability heatmap
+  static async getEventAvailability(eventId: string): Promise<EventAvailability> {
+    const response = await fetch(`${API_BASE}/events/${eventId}/availability`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to get event availability: ${response.statusText}`);
+    }
+    
+    return response.json();
+  }
+
+  // Update guest name
   static async updateGuestName(eventId: string, guestId: string, name: string): Promise<void> {
-    await delay();
-    console.log('🔄 [STUBBED] Updating guest name:', { eventId, guestId, name });
+    const response = await fetch(`${API_BASE}/events/${eventId}/guests/${guestId}/name`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to update guest name: ${response.statusText}`);
+    }
   }
 
-  // Stubbed: Update guest availability
+  // Update guest availability
   static async updateGuestAvailability(eventId: string, guestId: string, availability: string[]): Promise<void> {
-    await delay();
-    console.log('🔄 [STUBBED] Updating guest availability:', { eventId, guestId, availability });
+    const response = await fetch(`${API_BASE}/events/${eventId}/guests/${guestId}/availability`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ availability }),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to update guest availability: ${response.statusText}`);
+    }
   }
-
-  // Future: Real API calls would go here
-  // static async realCreateEvent(eventData: CreateEventRequest): Promise<Event> {
-  //   const response = await fetch(`${this.baseUrl}/events`, {
-  //     method: 'POST',
-  //     headers: { 'Content-Type': 'application/json' },
-  //     body: JSON.stringify(eventData),
-  //   });
-  //   
-  //   if (!response.ok) {
-  //     throw new Error(`Failed to create event: ${response.statusText}`);
-  //   }
-  //   
-  //   return response.json();
-  // }
 }

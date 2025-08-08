@@ -318,6 +318,7 @@ components:
         - name
         - description
         - expectedAttendees
+        - hostGuestId
         - createdAt
         - updatedAt
       properties:
@@ -336,6 +337,11 @@ components:
           maxLength: 2000
           description: Long-form event description
           example: "Let's coordinate our availability for the quarterly planning session"
+        hostGuestId:
+          type: string
+          pattern: '^[A-Za-z0-9]{8}$'
+          description: Host's guest ID for availability participation
+          example: "HOST123X"
         expectedAttendees:
           oneOf:
             - type: integer

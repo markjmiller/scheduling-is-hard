@@ -185,7 +185,7 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
           {isNotAvailable && (
             <p className="not-available-message">
               <i className="fas fa-info-circle"></i>
-              Your response has been recorded. Thank you for letting us know!
+              Your response has been recorded.
             </p>
           )}
         </div>
