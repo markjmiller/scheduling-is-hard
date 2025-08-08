@@ -23,7 +23,7 @@ The main page is a simple "create event" form.
   2. A long-form description.
   3. How many people are expected to attend (minimum 1 who is the host). Can indicate unknown.
 - The event is identified by a unique, 8 character alphanumeric ID. Managing an event means going to `/event/{event-id}`.
-- There is a "generate unique link" button that will create a unique link (also identified by a unique, 8 character alphanumeric ID) intended for a guest in the form `/event/{event-id}/guest/{guest-id}`. There is an optional field for the host to enter a name for the guest.
+- There is a "generate unique link" button that will create a unique link (also identified by a unique, 8 character alphanumeric ID) intended for a guest in the form `/guest/{guest-id}`. There is an optional field for the host to enter a name for the guest.
 - All unique links (i.e. guests) that have been generated show up in a table with a button to delete the guest and edit their info.
 - A host also gets the guests capabilities below, but without needing a link.
 

@@ -13,7 +13,7 @@ createRoot(document.getElementById("root")!).render(
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/event/:eventId" element={<HostPage />} />
-        <Route path="/event/:eventId/guest/:guestId" element={<GuestPage />} />
+        <Route path="/guest/:guestId" element={<GuestPage />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>,

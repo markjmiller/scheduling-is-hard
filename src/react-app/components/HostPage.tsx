@@ -62,7 +62,7 @@ export default function HostPage() {
         
         // Poll host's own availability calendar to sync across sessions
         if (hostGuestId) {
-          const hostGuestData = await ApiService.getGuest(eventId, hostGuestId);
+          const hostGuestData = await ApiService.getGuest(hostGuestId);
           if (hostGuestData?.availability) {
             setHostSelectedDates(hostGuestData.availability);
           }
@@ -110,7 +110,7 @@ export default function HostPage() {
       // Load host's existing availability if hostGuestId is available
       if (eventData.hostGuestId) {
         try {
-          const hostGuestData = await ApiService.getGuest(eventId, eventData.hostGuestId);
+          const hostGuestData = await ApiService.getGuest(eventData.hostGuestId);
           if (hostGuestData?.availability) {
             setHostSelectedDates(hostGuestData.availability);
           }
@@ -171,7 +171,7 @@ export default function HostPage() {
       setNewGuestName('');
 
       // Show success message with link
-      const fullLink = `${window.location.origin}/event/${eventId}/guest/${guestLink.guestId}`;
+      const fullLink = `${window.location.origin}/guest/${guestLink.guestId}`;
       navigator.clipboard.writeText(fullLink).then(() => {
         console.log('Guest link copied to clipboard:', fullLink);
       });
@@ -193,7 +193,7 @@ export default function HostPage() {
     setHostSelectedDates(newSelectedDates);
 
     try {
-      await ApiService.updateGuestAvailability(eventId, hostGuestId, newSelectedDates);
+      await ApiService.updateGuestAvailability(hostGuestId, newSelectedDates);
       
       // Refresh heatmap data
       const heatmapData = await ApiService.getEventAvailability(eventId);
@@ -337,7 +337,7 @@ export default function HostPage() {
               <strong>Your Guest ID:</strong> 
               <code className="guest-id-code">{hostGuestId}</code>
               <a 
-                href={`/event/${eventId}/guest/${hostGuestId}`} 
+                href={`/guest/${hostGuestId}`} 
                 className="guest-link-btn"
                 target="_blank" 
                 rel="noopener noreferrer"
@@ -415,7 +415,7 @@ export default function HostPage() {
                       <button 
                         className="copy-link-btn"
                         onClick={() => {
-                          const link = `${window.location.origin}/event/${eventId}/guest/${guest.id}`;
+                          const link = `${window.location.origin}/guest/${guest.id}`;
                           navigator.clipboard.writeText(link);
                         }}
                         title="Copy guest link"

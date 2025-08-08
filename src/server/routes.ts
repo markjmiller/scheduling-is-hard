@@ -117,92 +117,7 @@ api.post('/events/:eventId/guests',
   }
 );
 
-// Get guest details
-api.get('/events/:eventId/guests/:guestId',
-  validator('param', (value, c) => {
-    if (!isValidId(value.eventId) || !isValidId(value.guestId)) {
-      return c.text('Invalid ID format', 400);
-    }
-    return value;
-  }),
-  async (c) => {
-    const { guestId } = c.req.valid('param');
-    
-    try {
-      const guestDO = getGuest(c.env, guestId);
-      const guest = await guestDO.getGuest(guestId);
-      
-      if (!guest) {
-        return c.json({ error: 'Guest not found' }, 404);
-      }
-      
-      return c.json(guest);
-    } catch (error) {
-      console.error(`Failed to get guest ${guestId}:`, error);
-      return c.json({ error: 'Failed to get guest' }, 400);
-    }
-  }
-);
 
-// Update guest name
-api.put('/events/:eventId/guests/:guestId/name',
-  validator('param', (value, c) => {
-    if (!isValidId(value.eventId) || !isValidId(value.guestId)) {
-      return c.text('Invalid ID format', 400);
-    }
-    return value;
-  }),
-  validator('json', (value, c) => {
-    const data = value as { name: string };
-    if (!data.name || !data.name.trim()) {
-      return c.text('Name is required', 400);
-    }
-    return data;
-  }),
-  async (c) => {
-    const { eventId, guestId } = c.req.valid('param');
-    const { name } = c.req.valid('json');
-    const eventDO = getEvent(c.env, eventId);
-    
-    try {
-      await eventDO.updateGuestName(eventId, guestId, name.trim());
-      return c.json({ success: true });
-    } catch (error) {
-      return c.json({ error: 'Failed to update guest name' }, 400);
-    }
-  }
-);
-
-// Update guest availability
-api.put('/events/:eventId/guests/:guestId/availability',
-  validator('param', (value, c) => {
-    if (!isValidId(value.eventId) || !isValidId(value.guestId)) {
-      return c.text('Invalid ID format', 400);
-    }
-    return value;
-  }),
-  validator('json', (value, c) => {
-    const data = value as { availability: string[] };
-    if (!Array.isArray(data.availability)) {
-      return c.text('Availability must be an array', 400);
-    }
-    return data;
-  }),
-  async (c) => {
-    const { guestId } = c.req.valid('param');
-    const { availability } = c.req.valid('json');
-    
-    const guestDO = getGuest(c.env, guestId);
-    
-    try {
-      await guestDO.updateAvailability(guestId, availability);
-      return c.json({ success: true });
-    } catch (error) {
-      console.error(`Failed to update availability for guest ${guestId}:`, error);
-      return c.json({ error: 'Failed to update availability' }, 400);
-    }
-  }
-);
 
 // Get event availability heatmap
 api.get('/events/:eventId/availability',
@@ -221,6 +136,107 @@ api.get('/events/:eventId/availability',
       return c.json(availability);
     } catch (error) {
       return c.json({ error: 'Failed to get availability' }, 400);
+    }
+  }
+);
+
+// ===== NEW GUEST-ONLY API ENDPOINTS (NO EVENT ID EXPOSURE) =====
+
+// Get guest details by guest ID only
+api.get('/guests/:guestId',
+  validator('param', (value, c) => {
+    if (!isValidId(value.guestId)) {
+      return c.text('Invalid guest ID', 400);
+    }
+    return value;
+  }),
+  async (c) => {
+    const { guestId } = c.req.valid('param');
+    
+    try {
+      const guestDO = getGuest(c.env, guestId);
+      const guest = await guestDO.getGuest(guestId);
+      
+      if (!guest) {
+        return c.json({ error: 'Guest not found' }, 404);
+      }
+      
+      return c.json(guest);
+    } catch (error) {
+      console.error(`Failed to get guest ${guestId}:`, error);
+      return c.json({ error: 'Failed to get guest data' }, 500);
+    }
+  }
+);
+
+// Update guest name by guest ID only
+api.put('/guests/:guestId/name',
+  validator('param', (value, c) => {
+    if (!isValidId(value.guestId)) {
+      return c.text('Invalid guest ID', 400);
+    }
+    return value;
+  }),
+  validator('json', (value, c) => {
+    const data = value as any;
+    if (!data.name || typeof data.name !== 'string' || data.name.trim().length === 0) {
+      return c.json({ error: 'Name is required' }, 400);
+    }
+    return data;
+  }),
+  async (c) => {
+    const { guestId } = c.req.valid('param');
+    const { name } = c.req.valid('json');
+    
+    try {
+      const guestDO = getGuest(c.env, guestId);
+      const guestData = await guestDO.getGuest(guestId);
+      
+      if (!guestData) {
+        return c.json({ error: 'Guest not found' }, 404);
+      }
+      
+      const updatedGuest = await guestDO.updateGuest(guestId, guestData.eventId, { name: name.trim() });
+      return c.json(updatedGuest);
+    } catch (error) {
+      console.error(`Failed to update name for guest ${guestId}:`, error);
+      return c.json({ error: 'Failed to update guest name' }, 500);
+    }
+  }
+);
+
+// Update guest availability by guest ID only
+api.put('/guests/:guestId/availability',
+  validator('param', (value, c) => {
+    if (!isValidId(value.guestId)) {
+      return c.text('Invalid guest ID', 400);
+    }
+    return value;
+  }),
+  validator('json', (value, c) => {
+    const data = value as any;
+    if (!Array.isArray(data.availability)) {
+      return c.json({ error: 'Availability must be an array' }, 400);
+    }
+    return data;
+  }),
+  async (c) => {
+    const { guestId } = c.req.valid('param');
+    const { availability } = c.req.valid('json');
+    
+    try {
+      const guestDO = getGuest(c.env, guestId);
+      const guestData = await guestDO.getGuest(guestId);
+      
+      if (!guestData) {
+        return c.json({ error: 'Guest not found' }, 404);
+      }
+      
+      const updatedGuest = await guestDO.updateGuest(guestId, guestData.eventId, { availability });
+      return c.json(updatedGuest);
+    } catch (error) {
+      console.error(`Failed to update availability for guest ${guestId}:`, error);
+      return c.json({ error: 'Failed to update availability' }, 400);
     }
   }
 );

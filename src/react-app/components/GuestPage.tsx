@@ -9,7 +9,8 @@ type Event = components["schemas"]["Event"];
 type Guest = components["schemas"]["Guest"];
 
 export default function GuestPage() {
-  const { eventId, guestId } = useParams<{ eventId: string; guestId: string }>();
+  const { guestId } = useParams<{ guestId: string }>();
+  const [eventId, setEventId] = useState<string | null>(null);
   const [event, setEvent] = useState<Event | null>(null);
   const [, setGuest] = useState<Guest | null>(null);
   const [guestName, setGuestName] = useState('');
@@ -24,7 +25,7 @@ export default function GuestPage() {
 
   useEffect(() => {
     loadGuestData();
-  }, [eventId, guestId]);
+  }, [guestId]);
 
   // Real-time polling for mutual calendar updates
   useEffect(() => {
@@ -40,7 +41,7 @@ export default function GuestPage() {
         
         // Poll user's own availability calendar to sync across sessions
         if (guestId) {
-          const guestData = await ApiService.getGuest(eventId, guestId);
+          const guestData = await ApiService.getGuest(guestId);
           if (guestData?.availability) {
             setSelectedDates(guestData.availability);
           }
@@ -60,17 +61,19 @@ export default function GuestPage() {
   }, [eventId, guestId]);
 
   const loadGuestData = async () => {
-    if (!eventId || !guestId) return;
+    if (!guestId) return;
 
     try {
       setLoading(true);
-      // Load event and guest data in parallel
-      const [eventData, guestData] = await Promise.all([
-        ApiService.getEvent(eventId),
-        ApiService.getGuest(eventId, guestId)
-      ]);
-
-      setEvent(eventData);
+      
+      // First, get guest data which contains the eventId
+      const guestData = await ApiService.getGuest(guestId);
+      if (!guestData || !guestData.eventId) {
+        throw new Error('Guest not found or missing event information');
+      }
+      
+      // Store eventId from guest data
+      setEventId(guestData.eventId);
       setGuest(guestData);
       setGuestName(guestData.name || '');
       setIsEditingName(!guestData.name); // Edit name if not provided
@@ -80,8 +83,13 @@ export default function GuestPage() {
         setSelectedDates(guestData.availability);
       }
 
-      // Load availability heatmap
-      const heatmapData = await ApiService.getEventAvailability(eventId);
+      // Now load event data and heatmap using the eventId from guest data
+      const [eventData, heatmapData] = await Promise.all([
+        ApiService.getEvent(guestData.eventId),
+        ApiService.getEventAvailability(guestData.eventId)
+      ]);
+      
+      setEvent(eventData);
       setAvailabilityHeatmap(new Map(Object.entries(heatmapData.heatmap)));
       setTotalGuests(heatmapData.totalGuests);
       setRespondedGuests(heatmapData.respondedGuests);
@@ -99,7 +107,7 @@ export default function GuestPage() {
     if (!guestName.trim() || !eventId || !guestId) return;
 
     try {
-      await ApiService.updateGuestName(eventId, guestId, guestName.trim());
+      await ApiService.updateGuestName(guestId, guestName.trim());
       setIsEditingName(false);
     } catch (error) {
       console.error('Error updating guest name:', error);
@@ -115,7 +123,7 @@ export default function GuestPage() {
       if (!isNotAvailable) {
         // User is indicating they're not available - clear all selected dates
         setSelectedDates([]);
-        await ApiService.updateGuestAvailability(eventId, guestId, []);
+        await ApiService.updateGuestAvailability(guestId, []);
         
         // Record this as a response (even though no dates selected)
         console.log('Guest indicated not available - response recorded');
@@ -137,7 +145,7 @@ export default function GuestPage() {
 
     // Live update to server
     try {
-      await ApiService.updateGuestAvailability(eventId, guestId, newSelectedDates);
+      await ApiService.updateGuestAvailability(guestId, newSelectedDates);
       // Refresh heatmap data after update
       const heatmapData = await ApiService.getEventAvailability(eventId);
       setAvailabilityHeatmap(new Map(Object.entries(heatmapData.heatmap)));
