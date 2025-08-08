@@ -32,11 +32,19 @@ export default function GuestPage() {
 
     const pollAvailability = async () => {
       try {
-        // Only poll availability data for mutual calendar updates
+        // Poll mutual calendar updates
         const heatmapData = await ApiService.getEventAvailability(eventId);
         setAvailabilityHeatmap(new Map(Object.entries(heatmapData.heatmap)));
         setTotalGuests(heatmapData.totalGuests);
         setRespondedGuests(heatmapData.respondedGuests);
+        
+        // Poll user's own availability calendar to sync across sessions
+        if (guestId) {
+          const guestData = await ApiService.getGuest(eventId, guestId);
+          if (guestData?.availability) {
+            setSelectedDates(guestData.availability);
+          }
+        }
       } catch (err) {
         // Silently fail to avoid disrupting UX with polling errors
         console.warn('Failed to poll availability updates:', err);
@@ -49,7 +57,7 @@ export default function GuestPage() {
     return () => {
       clearInterval(pollInterval);
     };
-  }, [eventId]);
+  }, [eventId, guestId]);
 
   const loadGuestData = async () => {
     if (!eventId || !guestId) return;
