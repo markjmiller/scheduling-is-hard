@@ -317,7 +317,6 @@ components:
         - id
         - name
         - description
-        - expectedAttendees
         - hostGuestId
         - createdAt
         - updatedAt
@@ -342,15 +341,6 @@ components:
           pattern: '^[A-Za-z0-9]{8}$'
           description: Host's guest ID for availability participation
           example: "HOST123X"
-        expectedAttendees:
-          oneOf:
-            - type: integer
-              minimum: 1
-              description: Expected number of attendees (minimum 1 for host)
-              example: 5
-            - type: string
-              enum: ["unknown"]
-              description: Unknown number of attendees
         createdAt:
           type: string
           format: date-time
@@ -365,7 +355,7 @@ components:
       required:
         - name
         - description
-        - expectedAttendees
+        - hostName
       properties:
         name:
           type: string
@@ -377,15 +367,11 @@ components:
           maxLength: 2000
           description: Long-form event description
           example: "Let's coordinate our availability for the quarterly planning session"
-        expectedAttendees:
-          oneOf:
-            - type: integer
-              minimum: 1
-              description: Expected number of attendees (minimum 1 for host)
-              example: 5
-            - type: string
-              enum: ["unknown"]
-              description: Unknown number of attendees
+        hostName:
+          type: string
+          maxLength: 100
+          description: Name of the event host
+          example: "John Smith"
     
     UpdateEventRequest:
       type: object
@@ -400,15 +386,6 @@ components:
           maxLength: 2000
           description: Long-form event description
           example: "Updated description for the quarterly planning session"
-        expectedAttendees:
-          oneOf:
-            - type: integer
-              minimum: 1
-              description: Expected number of attendees (minimum 1 for host)
-              example: 8
-            - type: string
-              enum: ["unknown"]
-              description: Unknown number of attendees
     
     Guest:
       type: object

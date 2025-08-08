@@ -22,7 +22,6 @@ const API_BASE = '/api';
 
 export class ApiService {
 
-  // Create a new event
   static async createEvent(eventData: CreateEventRequest): Promise<Event> {
     const response = await fetch(`${API_BASE}/events`, {
       method: 'POST',
@@ -37,12 +36,25 @@ export class ApiService {
     return response.json();
   }
 
-  // Get event details
   static async getEvent(eventId: string): Promise<Event> {
     const response = await fetch(`${API_BASE}/events/${eventId}`);
     
     if (!response.ok) {
       throw new Error(`Failed to get event: ${response.statusText}`);
+    }
+    
+    return response.json();
+  }
+
+  static async updateEvent(eventId: string, updateData: { name?: string; description?: string }): Promise<Event> {
+    const response = await fetch(`${API_BASE}/events/${eventId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updateData),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to update event: ${response.statusText}`);
     }
     
     return response.json();
@@ -63,7 +75,6 @@ export class ApiService {
     return response.json();
   }
 
-  // Get guest details (new guest-only endpoint)
   static async getGuest(guestId: string): Promise<Guest> {
     const response = await fetch(`${API_BASE}/guests/${guestId}`);
     
@@ -86,7 +97,7 @@ export class ApiService {
   }
 
   // Update guest name (new guest-only endpoint)
-  static async updateGuestName(guestId: string, name: string): Promise<void> {
+  static async updateGuestName(guestId: string, name: string): Promise<Guest> {
     const response = await fetch(`${API_BASE}/guests/${guestId}/name`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -96,10 +107,12 @@ export class ApiService {
     if (!response.ok) {
       throw new Error(`Failed to update guest name: ${response.statusText}`);
     }
+    
+    return response.json();
   }
 
   // Update guest availability (new guest-only endpoint)
-  static async updateGuestAvailability(guestId: string, availability: string[]): Promise<void> {
+  static async updateGuestAvailability(guestId: string, availability: string[]): Promise<Guest> {
     const response = await fetch(`${API_BASE}/guests/${guestId}/availability`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -109,10 +122,12 @@ export class ApiService {
     if (!response.ok) {
       throw new Error(`Failed to update guest availability: ${response.statusText}`);
     }
+    
+    return response.json();
   }
 
   // Get event guests
-  static async getEventGuests(eventId: string): Promise<any[]> {
+  static async getEventGuests(eventId: string): Promise<Guest[]> {
     const response = await fetch(`${API_BASE}/events/${eventId}/guests`);
     
     if (!response.ok) {

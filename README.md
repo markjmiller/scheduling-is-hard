@@ -2,6 +2,12 @@
 
 Mutually find availability with any number of people.
 
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/markjmiller/scheduling-is-hard)
+
+Scheduling with friends is hard. This app is designed to get mutual availability for any number of people, quickly. A host can create an event, and then create as many unique links as they want to send out to guests. Guests will be invited to an event and can submit their availability, and a calendar heatmap of availability will be displayed to everyone.
+
+TODO: image
+
 ## Dev
 
 | Command | Description |

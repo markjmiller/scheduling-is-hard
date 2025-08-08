@@ -490,7 +490,6 @@ export interface components {
              * @example HOST123X
              */
             hostGuestId: string;
-            expectedAttendees: number | "unknown";
             /**
              * Format: date-time
              * @description Event creation timestamp
@@ -513,7 +512,11 @@ export interface components {
              * @example Let's coordinate our availability for the quarterly planning session
              */
             description: string;
-            expectedAttendees: number | "unknown";
+            /**
+             * @description Name of the event host
+             * @example John Smith
+             */
+            hostName: string;
         };
         UpdateEventRequest: {
             /**
@@ -526,7 +529,6 @@ export interface components {
              * @example Updated description for the quarterly planning session
              */
             description?: string;
-            expectedAttendees?: number | "unknown";
         };
         Guest: {
             /**

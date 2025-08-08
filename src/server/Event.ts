@@ -1,5 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import type { components } from "../../types/api";
+import { BACKEND_POLLING_INTERVALS } from "./config/polling";
 
 type EventType = components["schemas"]["Event"];
 type CreateEventRequest = components["schemas"]["CreateEventRequest"];
@@ -9,7 +10,6 @@ interface EventData {
   id: string;
   name: string;
   description: string;
-  expectedAttendees: number | "unknown";
   createdAt: string;
   updatedAt: string;
   hostGuestId?: string;
@@ -38,7 +38,6 @@ export class Event extends DurableObject<Env> {
   // Alarm handler - polls Guest DOs and updates aggregate availability
   async alarm(): Promise<void> {
     try {
-      // Get all events this DO manages
       const eventKeys = await this.ctx.storage.list({ prefix: 'event:', limit: 100 });
       
       for (const [key, _eventData] of eventKeys) {
@@ -48,12 +47,12 @@ export class Event extends DurableObject<Env> {
         await this.updateAggregateAvailability(eventId);
       }
       
-      // Set next alarm for 1 seconds
-      await this.ctx.storage.setAlarm(Date.now() + 1000);
+      // Set next alarm for aggregate availability updates
+      await this.ctx.storage.setAlarm(Date.now() + BACKEND_POLLING_INTERVALS.EVENT_DO.AGGREGATE_AVAILABILITY_UPDATE);
     } catch (error) {
       console.error('Event DO alarm error:', error);
-      // Retry in 60 seconds on error
-      await this.ctx.storage.setAlarm(Date.now() + 60000);
+      // Retry on error with longer interval
+      await this.ctx.storage.setAlarm(Date.now() + BACKEND_POLLING_INTERVALS.EVENT_DO.ALARM_ERROR_RETRY);
     }
   }
 
@@ -62,17 +61,14 @@ export class Event extends DurableObject<Env> {
     const guestList = await this.ctx.storage.get<Record<string, boolean>>(`event:${eventId}:guests`) || {};
     const guestIds = Object.keys(guestList);
     
-    // Get event data to use expectedAttendees for totalGuests
     const eventData = await this.ctx.storage.get<EventData>(`event:${eventId}`);
     if (!eventData) {
       return;
     }
 
     const heatmap: Record<string, number> = {};
-    // Use configured expected attendees if it's a valid number, otherwise set to undefined for "unknown" 
-    let totalGuests = typeof eventData.expectedAttendees === 'number' 
-      ? eventData.expectedAttendees 
-      : undefined; // Don't use actual guest count for "unknown" scenario
+    // Infer total guests from actual guest links created (including host)
+    let totalGuests = guestIds.length;
     let respondedGuests = 0;
 
     // Poll each Guest DO for availability
@@ -121,65 +117,53 @@ export class Event extends DurableObject<Env> {
     return result;
   }
 
-  // Create a new event
   async createEvent(eventId: string, request: CreateEventRequest): Promise<EventType & { hostGuestId: string }> {
     const now = new Date().toISOString();
     
-    // Create host guest ID
     const hostGuestId = this.generateId();
     
     const eventData: EventData = {
       id: eventId,
       name: request.name,
       description: request.description,
-      expectedAttendees: request.expectedAttendees || "unknown",
       createdAt: now,
       updatedAt: now,
       hostGuestId: hostGuestId
     };
 
-    // Store event data
     await this.ctx.storage.put(`event:${eventId}`, eventData);
     
-    // ✅ FIX: Create Guest DO for the host first
     const hostGuestDO = this.env.GUEST.get(this.env.GUEST.idFromName(hostGuestId));
     await hostGuestDO.updateGuest(hostGuestId, eventId, {
-      name: "Host" // Default host name
+      name: request.hostName
     });
     
-    // ✅ FIX: Store host as full GuestData object (not just boolean flag)
     const hostGuestData: GuestData = {
       id: hostGuestId,
       eventId: eventId,
-      name: "Host",
+      name: request.hostName,
       createdAt: now,
       updatedAt: now,
       // availability is undefined initially (host hasn't responded yet)
     };
     
-    // Initialize guests list with proper GuestData format
     await this.ctx.storage.put(`event:${eventId}:guests`, { [hostGuestId]: hostGuestData });
     
-    // Initialize aggregate availability cache with correct totalGuests based on expectedAttendees
-    const initialTotalGuests = typeof request.expectedAttendees === 'number' 
-      ? request.expectedAttendees 
-      : undefined; // undefined for "unknown" scenario
-    
+    // Initialize aggregate availability cache - totalGuests will be inferred from actual guest count
     await this.ctx.storage.put(`event:${eventId}:availability_cache`, {
       heatmap: {},
-      totalGuests: initialTotalGuests,
+      totalGuests: 1, // Start with 1 (host)
       respondedGuests: 0,
       lastUpdated: now
     });
     
-    // Set up alarm to poll Guest DOs for availability updates every 30 seconds
-    await this.ctx.storage.setAlarm(Date.now() + 10000);
+    // Set up alarm to poll Guest DOs for availability updates
+    await this.ctx.storage.setAlarm(Date.now() + BACKEND_POLLING_INTERVALS.EVENT_DO.AGGREGATE_AVAILABILITY_UPDATE);
 
     return {
       id: eventId,
       name: eventData.name,
       description: eventData.description,
-      expectedAttendees: eventData.expectedAttendees,
       url: `/event/${eventId}`,
       createdAt: eventData.createdAt,
       updatedAt: eventData.updatedAt,
@@ -187,7 +171,6 @@ export class Event extends DurableObject<Env> {
     } as EventType & { hostGuestId: string };
   }
 
-  // Get event details
   async getEvent(eventId: string): Promise<EventType | null> {
     const eventData = await this.ctx.storage.get<EventData>(`event:${eventId}`);
     
@@ -199,7 +182,6 @@ export class Event extends DurableObject<Env> {
       id: eventData.id,
       name: eventData.name,
       description: eventData.description,
-      expectedAttendees: eventData.expectedAttendees,
       url: `/event/${eventId}`,
       createdAt: eventData.createdAt,
       updatedAt: eventData.updatedAt,
@@ -207,7 +189,39 @@ export class Event extends DurableObject<Env> {
     } as EventType & { hostGuestId?: string };
   }
 
-  // Generate a guest link for an event
+  async updateEvent(eventId: string, request: { name?: string; description?: string }): Promise<EventType | null> {
+    const eventData = await this.ctx.storage.get<EventData>(`event:${eventId}`);
+    
+    if (!eventData) {
+      return null;
+    }
+
+    const updatedEventData: EventData = {
+      ...eventData,
+      updatedAt: new Date().toISOString()
+    };
+
+    if (request.name !== undefined) {
+      updatedEventData.name = request.name;
+    }
+
+    if (request.description !== undefined) {
+      updatedEventData.description = request.description;
+    }
+
+    await this.ctx.storage.put(`event:${eventId}`, updatedEventData);
+
+    return {
+      id: updatedEventData.id,
+      name: updatedEventData.name,
+      description: updatedEventData.description,
+      url: `/event/${eventId}`,
+      createdAt: updatedEventData.createdAt,
+      updatedAt: updatedEventData.updatedAt,
+      hostGuestId: updatedEventData.hostGuestId
+    } as EventType;
+  }
+
   async generateGuestLink(eventId: string, guestName?: string): Promise<GuestLink> {
     const eventData = await this.ctx.storage.get<EventData>(`event:${eventId}`);
     
@@ -227,12 +241,10 @@ export class Event extends DurableObject<Env> {
       updatedAt: now
     };
 
-    // Store guest data in Event DO (for event management)
     const guests = await this.ctx.storage.get<Record<string, GuestData>>(`event:${eventId}:guests`) || {};
     guests[guestId] = guestData;
     await this.ctx.storage.put(`event:${eventId}:guests`, guests);
 
-    // ALSO store guest data in Guest DO (for individual guest access)
     const guestDOId = this.env.GUEST.idFromName(guestId);
     const guestDO = this.env.GUEST.get(guestDOId);
     await guestDO.updateGuest(guestId, eventId, guestData);
@@ -243,8 +255,7 @@ export class Event extends DurableObject<Env> {
     };
   }
 
-  // Get guest details
-  async getGuest(eventId: string, guestId: string): Promise<GuestData | null> {
+  async getGuestDetails(eventId: string, guestId: string): Promise<GuestData | null> {
     const guests = await this.ctx.storage.get<Record<string, GuestData>>(`event:${eventId}:guests`);
     
     if (!guests || !guests[guestId]) {
@@ -254,7 +265,6 @@ export class Event extends DurableObject<Env> {
     return guests[guestId];
   }
 
-  // Update guest name
   async updateGuestName(eventId: string, guestId: string, name: string): Promise<void> {
     const guests = await this.ctx.storage.get<Record<string, GuestData>>(`event:${eventId}:guests`);
     
@@ -268,7 +278,6 @@ export class Event extends DurableObject<Env> {
     await this.ctx.storage.put(`event:${eventId}:guests`, guests);
   }
 
-  // Update guest availability
   async updateGuestAvailability(eventId: string, guestId: string, availability: string[]): Promise<void> {
     const guests = await this.ctx.storage.get<Record<string, GuestData>>(`event:${eventId}:guests`);
     

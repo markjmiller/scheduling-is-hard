@@ -345,7 +345,7 @@
   opacity: 0.9;
 }
 
-.availability-fraction {
+.availability-count {
   position: absolute;
   bottom: 2px;
   left: 50%;
@@ -414,6 +414,7 @@
   display: flex;
   gap: 1.5rem;
   flex-wrap: wrap;
+  flex-direction: column;
 }
 
 .legend-item {
@@ -438,7 +439,35 @@
   font-weight: 500;
 }
 
+.count-demo {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+  padding: 2px 3px;
+  border-radius: 3px;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+}
 
+/* Response Status Icons */
+.response-warning-icon {
+  color: #f39c12;
+  margin-left: 8px;
+  font-size: 0.9em;
+}
+
+.response-complete-icon {
+  color: #27ae60;
+  margin-left: 8px;
+  font-size: 0.9em;
+}
+
+/* Waiting text styling */
+.waiting-text {
+  color: #f39c12;
+  font-weight: 400;
+  font-style: italic;
+}
 
 /* Calendar Footer */
 .calendar-footer {

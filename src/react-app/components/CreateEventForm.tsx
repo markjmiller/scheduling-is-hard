@@ -10,31 +10,21 @@ export default function CreateEventForm() {
   const [formData, setFormData] = useState<CreateEventRequest>({
     name: '',
     description: '',
-    expectedAttendees: 1,
+    hostName: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isUnknownAttendees, setIsUnknownAttendees] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'expectedAttendees' && !isUnknownAttendees ? parseInt(value) || 1 : value,
-    }));
-  };
-
-  const handleAttendeesToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const checked = e.target.checked;
-    setIsUnknownAttendees(checked);
-    setFormData(prev => ({
-      ...prev,
-      expectedAttendees: checked ? 'unknown' : 1,
+      [name]: value,
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.description.trim()) return;
+    if (!formData.name.trim() || !formData.description.trim() || !formData.hostName.trim()) return;
 
     setIsSubmitting(true);
     try {
@@ -49,7 +39,7 @@ export default function CreateEventForm() {
     }
   };
 
-  const isFormValid = formData.name.trim() && formData.description.trim();
+  const isFormValid = formData.name.trim() && formData.description.trim() && formData.hostName.trim();
 
   return (
     <div className="create-event-form">
@@ -61,6 +51,25 @@ export default function CreateEventForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="event-form">
+        <div className="form-group">
+          <label htmlFor="hostName" className="form-label">
+            <i className="fas fa-user"></i>
+            Your Name *
+          </label>
+          <input
+            type="text"
+            id="hostName"
+            name="hostName"
+            value={formData.hostName}
+            onChange={handleInputChange}
+            placeholder="John Smith"
+            maxLength={100}
+            required
+            className="form-input"
+            disabled={isSubmitting}
+          />
+        </div>
+
         <div className="form-group">
           <label htmlFor="name" className="form-label">
             <i className="fas fa-calendar-alt"></i>
@@ -99,43 +108,7 @@ export default function CreateEventForm() {
           />
         </div>
 
-        <div className="form-group">
-          <label className="form-label">
-            <i className="fas fa-users"></i>
-            Expected Attendees
-          </label>
-          
-          <div className="attendees-control">
-            <div className="checkbox-wrapper">
-              <input
-                type="checkbox"
-                id="unknown-attendees"
-                checked={isUnknownAttendees}
-                onChange={handleAttendeesToggle}
-                disabled={isSubmitting}
-              />
-              <label htmlFor="unknown-attendees">
-                Unknown number of attendees
-              </label>
-            </div>
-            
-            {!isUnknownAttendees && (
-              <div className="number-input-wrapper">
-                <input
-                  type="number"
-                  name="expectedAttendees"
-                  value={formData.expectedAttendees as number}
-                  onChange={handleInputChange}
-                  min={1}
-                  max={100}
-                  className="form-input number-input"
-                  disabled={isSubmitting}
-                />
-                <span className="input-hint">Including yourself as the host</span>
-              </div>
-            )}
-          </div>
-        </div>
+
 
         <div className="form-actions">
           <button

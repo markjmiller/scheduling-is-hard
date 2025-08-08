@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import Calendar from './Calendar.tsx';
 import { ApiService } from '../services/api';
+import { POLLING_INTERVALS } from '../config/polling';
 import '../css/GuestPage.css';
 import type { components } from '../../../types/api';
 
@@ -40,8 +41,15 @@ export default function GuestPage() {
 
     const pollAvailability = async () => {
       try {
-        // Poll mutual calendar updates
-        const heatmapData = await ApiService.getEventAvailability(eventId);
+        // Poll event details and mutual calendar updates
+        const [eventData, heatmapData] = await Promise.all([
+          ApiService.getEvent(eventId),
+          ApiService.getEventAvailability(eventId)
+        ]);
+        
+        // Update event information if it has changed
+        setEvent(eventData);
+        
         setAvailabilityHeatmap(new Map(Object.entries(heatmapData.heatmap)));
         setTotalGuests(heatmapData.totalGuests);
         setRespondedGuests(heatmapData.respondedGuests);
@@ -55,12 +63,12 @@ export default function GuestPage() {
         }
       } catch (err) {
         // Silently fail to avoid disrupting UX with polling errors
-        console.warn('Failed to poll availability updates:', err);
+        console.warn('Failed to poll updates:', err);
       }
     };
 
-    // Start polling every 1 second for real-time mutual calendar updates
-    pollIntervalRef.current = setInterval(pollAvailability, 1000);
+    // Start polling for real-time mutual calendar updates
+    pollIntervalRef.current = setInterval(pollAvailability, POLLING_INTERVALS.GUEST_PAGE.EVENT_AND_AVAILABILITY);
   }, [eventId, guestId]);
 
   // Poll for real-time availability updates
@@ -85,7 +93,8 @@ export default function GuestPage() {
       // First, get guest data which contains the eventId
       const guestData = await ApiService.getGuest(guestId);
       if (!guestData || !guestData.eventId) {
-        throw new Error('Guest not found or missing event information');
+        setError('GUEST_NOT_FOUND');
+        return;
       }
       
       // Store eventId from guest data
@@ -111,7 +120,11 @@ export default function GuestPage() {
       setRespondedGuests(heatmapData.respondedGuests);
 
     } catch (err) {
-      setError('Failed to load event data');
+      if (err instanceof Error && (err.message.includes('404') || err.message.includes('Not Found'))) {
+        setError('GUEST_NOT_FOUND');
+      } else {
+        setError('FAILED_TO_LOAD');
+      }
       console.error('Error loading guest data:', err);
     } finally {
       setLoading(false);
@@ -145,9 +158,6 @@ export default function GuestPage() {
         resetPollInterval();
         
         await ApiService.updateGuestAvailability(guestId, []);
-        
-        // Record this as a response (even though no dates selected)
-        console.log('Guest indicated not available - response recorded');
       }
     } catch (error) {
       console.error('Error updating not available status:', error);
@@ -196,9 +206,19 @@ export default function GuestPage() {
     return (
       <div className="guest-page">
         <div className="error">
-          <i className="fas fa-exclamation-triangle"></i>
-          <h2>Error</h2>
-          <p>{error}</p>
+          {error === 'GUEST_NOT_FOUND' ? (
+            <>
+              <i className="fas fa-user-slash"></i>
+              <h2>Guest Link Not Found</h2>
+              <p>This guest invitation link is invalid or may have been deleted. Please check the link or contact the event organizer for a new invitation.</p>
+            </>
+          ) : (
+            <>
+              <i className="fas fa-exclamation-triangle"></i>
+              <h2>Failed to Load Event</h2>
+              <p>We encountered an error loading the event data. Please try refreshing the page or contact support if the issue persists.</p>
+            </>
+          )}
         </div>
       </div>
     );
@@ -272,6 +292,7 @@ export default function GuestPage() {
             totalGuests={totalGuests}
             isNotAvailable={isNotAvailable}
             onNotAvailableToggle={handleNotAvailable}
+            hasSubmittedAvailability={selectedDates.length > 0 || isNotAvailable}
           />
           
 

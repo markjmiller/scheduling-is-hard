@@ -88,6 +88,40 @@ api.get('/events/:eventId',
   }
 );
 
+api.put('/events/:eventId',
+  validator('param', (value, c) => {
+    if (!isValidId(value.eventId)) {
+      return c.text('Invalid event ID', 400);
+    }
+    return value;
+  }),
+  validator('json', (value) => {
+    const data = value as { name?: string; description?: string };
+
+    if (data.name !== undefined && (!data.name || data.name.length > 200)) {
+      throw new Error('Name must be non-empty and under 200 characters');
+    }
+    
+    if (data.description !== undefined && data.description.length > 2000) {
+      throw new Error('Description must be under 2000 characters');
+    }
+    return data;
+  }),
+  async (c) => {
+    const { eventId } = c.req.valid('param');
+    const updateData = c.req.valid('json');
+    
+    const eventDO = getEvent(c.env, eventId);
+    const updatedEvent = await eventDO.updateEvent(eventId, updateData);
+    
+    if (!updatedEvent) {
+      return c.json({ error: 'Event not found' }, 404);
+    }
+    
+    return c.json(updatedEvent);
+  }
+);
+
 api.post('/events/:eventId/guests',
   validator('param', (value, c) => {
     if (!isValidId(value.eventId)) {
@@ -186,7 +220,6 @@ api.put('/guests/:guestId/name',
         return c.json({ error: 'Guest not found' }, 404);
       }
       
-      // Update Guest DO
       const updatedGuest = await guestDO.updateGuest(guestId, guestData.eventId, { name: name.trim() });
       
       // Also update Event DO to keep both storage locations in sync
@@ -227,7 +260,6 @@ api.put('/guests/:guestId/availability',
         return c.json({ error: 'Guest not found' }, 404);
       }
       
-      // Update Guest DO
       const updatedGuest = await guestDO.updateGuest(guestId, guestData.eventId, { availability });
       
       // Also update Event DO to keep both storage locations in sync
@@ -288,7 +320,6 @@ api.delete('/guests/:guestId',
         return c.json({ error: 'Guest not found' }, 404);
       }
       
-      // Delete from Guest DO
       await guestDO.deleteGuest(guestId);
       
       // Also remove from Event DO's guest list

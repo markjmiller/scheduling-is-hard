@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import Calendar from './Calendar.tsx';
 import { ApiService } from '../services/api';
+import { POLLING_INTERVALS } from '../config/polling';
 import '../css/HostPage.css';
 import type { components } from '../../../types/api';
 
@@ -21,8 +22,7 @@ export default function HostPage() {
   const [isEditingEvent, setIsEditingEvent] = useState(false);
   const [eventForm, setEventForm] = useState({
     name: '',
-    description: '',
-    expectedAttendees: 1 as number | 'unknown'
+    description: ''
   });
 
   // Guest management state
@@ -69,11 +69,23 @@ export default function HostPage() {
 
     const pollAvailability = async () => {
       try {
-        // Poll mutual calendar updates
-        const heatmapData = await ApiService.getEventAvailability(eventId);
+        // Poll mutual calendar updates and guest list updates
+        const [heatmapData, guestList] = await Promise.all([
+          ApiService.getEventAvailability(eventId),
+          ApiService.getEventGuests(eventId)
+        ]);
+        
         setAvailabilityHeatmap(new Map(Object.entries(heatmapData.heatmap)));
         setTotalGuests(heatmapData.totalGuests);
         setRespondedGuests(heatmapData.respondedGuests);
+        
+        // Update guest list (filter out host from guest rows)
+        const filteredGuests = guestList.filter(guest => guest.id !== hostGuestId);
+        const extendedGuests: ExtendedGuest[] = filteredGuests.map(guest => ({
+          ...guest,
+          hasResponded: Boolean(guest.availability && guest.availability.length > 0)
+        }));
+        setGuests(extendedGuests);
         
         // Poll host's own availability calendar to sync across sessions
         if (hostGuestId) {
@@ -88,8 +100,8 @@ export default function HostPage() {
       }
     };
 
-    // Start polling every 1 seconds for real-time updates
-    pollIntervalRef.current = setInterval(pollAvailability, 1000);
+    // Start polling for real-time updates
+    pollIntervalRef.current = setInterval(pollAvailability, POLLING_INTERVALS.HOST_PAGE.AVAILABILITY_AND_GUESTS);
   }, [eventId, hostGuestId]);
 
   // Poll for availability updates every 10 seconds for real-time sync
@@ -116,8 +128,7 @@ export default function HostPage() {
       setEvent(eventData);
       setEventForm({
         name: eventData.name,
-        description: eventData.description,
-        expectedAttendees: eventData.expectedAttendees || 1
+        description: eventData.description
       });
       
       // Set host guest ID for availability participation
@@ -137,7 +148,11 @@ export default function HostPage() {
       
       // Filter out the host from the guest list (host shouldn't appear in "Invited Guests")
       const filteredGuests = guestList.filter(guest => guest.id !== eventData.hostGuestId);
-      setGuests(filteredGuests);
+      const extendedGuests: ExtendedGuest[] = filteredGuests.map(guest => ({
+        ...guest,
+        hasResponded: Boolean(guest.availability && guest.availability.length > 0)
+      }));
+      setGuests(extendedGuests);
       
       // Load host's existing availability and name if hostGuestId is available
       if (eventData.hostGuestId) {
@@ -168,7 +183,7 @@ export default function HostPage() {
     const { name, value } = e.target;
     setEventForm(prev => ({
       ...prev,
-      [name]: name === 'expectedAttendees' ? parseInt(value) || 1 : value
+      [name]: value
     }));
   };
 
@@ -177,11 +192,17 @@ export default function HostPage() {
     if (!eventId || !eventForm.name.trim() || !eventForm.description.trim()) return;
 
     try {
-      // TODO: Update event via API when implemented
+      const updatedEvent = await ApiService.updateEvent(eventId, {
+        name: eventForm.name.trim(),
+        description: eventForm.description.trim()
+      });
+      
+      // Update local state with the updated event
+      setEvent(updatedEvent);
       setIsEditingEvent(false);
-      console.log('Event updated:', eventForm);
     } catch (error) {
       console.error('Error updating event:', error);
+      alert('Failed to update event. Please try again.');
     }
   };
 
@@ -207,9 +228,7 @@ export default function HostPage() {
 
       // Show success message with link
       const fullLink = `${window.location.origin}/guest/${guestLink.guestId}`;
-      navigator.clipboard.writeText(fullLink).then(() => {
-        console.log('Guest link copied to clipboard:', fullLink);
-      });
+      navigator.clipboard.writeText(fullLink);
 
     } catch (error) {
       console.error('Error generating guest link:', error);
@@ -265,8 +284,6 @@ export default function HostPage() {
         
         // CRITICAL: Send empty array to server
         await ApiService.updateGuestAvailability(hostGuestId, []);
-        
-        console.log('Host indicated not available - response recorded');
       }
     } catch (error) {
       console.error('Error updating host not available status:', error);
@@ -318,12 +335,6 @@ export default function HostPage() {
   };
   
   const handleDeleteGuest = async (guest: ExtendedGuest) => {
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete ${guest.name || 'this guest'}? This action cannot be undone.`
-    );
-    
-    if (!confirmDelete) return;
-    
     try {
       await ApiService.deleteGuest(guest.id);
       
@@ -395,17 +406,7 @@ export default function HostPage() {
                 required
               />
             </div>
-            <div className="form-group">
-              <label htmlFor="expectedAttendees">Expected Attendees:</label>
-              <input
-                type="number"
-                name="expectedAttendees"
-                value={eventForm.expectedAttendees}
-                onChange={handleEventFormChange}
-                min="1"
-                className="expected-attendees-input"
-              />
-            </div>
+
             <div className="form-actions">
               <button type="submit" className="save-btn">
                 <i className="fas fa-check"></i>
@@ -428,19 +429,35 @@ export default function HostPage() {
                 <h1>{event.name}</h1>
                 <p>{event.description}</p>
                 <div className="event-meta">
-                  <span>Expected Attendees: {event.expectedAttendees || 'Unknown'}</span>
                   <span>Event ID: {event.id}</span>
                 </div>
               </div>
             </div>
-            <button 
-              className="edit-event-btn"
-              onClick={() => setIsEditingEvent(true)}
-              title="Edit event details"
-            >
-              <i className="fas fa-edit"></i>
-              Edit Event
-            </button>
+            <div className="event-actions">
+              <button 
+                className="edit-event-btn"
+                onClick={() => setIsEditingEvent(true)}
+                title="Edit event details"
+              >
+                <i className="fas fa-edit"></i>
+                Edit Event
+              </button>
+              <button 
+                className="copy-event-link-btn"
+                onClick={() => {
+                  const eventLink = `${window.location.origin}/event/${event.id}`;
+                  navigator.clipboard.writeText(eventLink);
+                }}
+                title="Copy event management link"
+              >
+                <i className="fas fa-copy"></i>
+                Copy Event Link
+              </button>
+            </div>
+            <div className="event-link-warning">
+              <i className="fas fa-exclamation-triangle"></i>
+              <span>The event management link above is the only way to manage this event. Save it securely!</span>
+            </div>
           </div>
         )}
       </header>
@@ -482,7 +499,7 @@ export default function HostPage() {
 
         {/* Guests Table */}
         <div className="guests-table">
-          <h3>Invited Guests ({guests.length})</h3>
+          <h3 style={{ paddingLeft: '1rem' }}>Invited Guests ({guests.length})</h3>
           {guests.length === 0 ? (
             <div className="empty-state">
               <i className="fas fa-user-plus"></i>
@@ -603,8 +620,6 @@ export default function HostPage() {
 
       {/* Host Availability Section */}
       <section className="host-availability">
-        <h2>Your Availability</h2>
-        
         {/* Host Name Display/Edit */}
         {hostGuestId && (
           <div className="host-info">
@@ -688,6 +703,7 @@ export default function HostPage() {
           isNotAvailable={isHostNotAvailable}
           onNotAvailableToggle={handleHostNotAvailable}
           showHostLegend={false}
+          hasSubmittedAvailability={hostSelectedDates.length > 0 || isHostNotAvailable}
         />
       </section>
     </div>
