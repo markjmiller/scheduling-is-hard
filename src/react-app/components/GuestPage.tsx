@@ -20,6 +20,7 @@ export default function GuestPage() {
   const [availabilityHeatmap, setAvailabilityHeatmap] = useState<Map<string, number>>(new Map());
   const [totalGuests, setTotalGuests] = useState(0);
   const [respondedGuests, setRespondedGuests] = useState(0);
+  const [isNotAvailable, setIsNotAvailable] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,14 +64,33 @@ export default function GuestPage() {
   };
 
   const handleNameSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
     if (!guestName.trim() || !eventId || !guestId) return;
 
     try {
       await ApiService.updateGuestName(eventId, guestId, guestName.trim());
       setIsEditingName(false);
-    } catch (err) {
-      console.error('Error updating guest name:', err);
+    } catch (error) {
+      console.error('Error toggling date:', error);
+    }
+  };
+
+  const handleNotAvailable = async () => {
+    if (!eventId || !guestId) return;
+    
+    try {
+      setIsNotAvailable(!isNotAvailable);
+      
+      if (!isNotAvailable) {
+        // User is indicating they're not available - clear all selected dates
+        setSelectedDates([]);
+        await ApiService.updateGuestAvailability(eventId, guestId, []);
+        
+        // Record this as a response (even though no dates selected)
+        console.log('Guest indicated not available - response recorded');
+      }
+    } catch (error) {
+      console.error('Error updating not available status:', error);
+      setIsNotAvailable(false);
     }
   };
 
@@ -185,33 +205,16 @@ export default function GuestPage() {
             selectedDates={selectedDates}
             availabilityHeatmap={availabilityHeatmap}
             onDateToggle={handleDateToggle}
+            respondedGuests={respondedGuests}
+            totalGuests={totalGuests}
+            isNotAvailable={isNotAvailable}
+            onNotAvailableToggle={handleNotAvailable}
           />
+          
+
         </div>
 
-        <div className="availability-stats">
-          <div className="stats-card">
-            <div className="stat">
-              <i className="fas fa-users"></i>
-              <div>
-                <span className="stat-value">{respondedGuests}</span>
-                <span className="stat-label">of {totalGuests} responded</span>
-              </div>
-            </div>
-            <div className="heatmap-legend">
-              <span className="legend-label">Availability:</span>
-              <div className="legend-scale">
-                <div className="legend-item">
-                  <div className="legend-color legend-low"></div>
-                  <span>Low</span>
-                </div>
-                <div className="legend-item">
-                  <div className="legend-color legend-high"></div>
-                  <span>High</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+
       </main>
     </div>
   );

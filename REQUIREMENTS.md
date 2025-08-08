@@ -8,6 +8,8 @@ Scheduling with friends is hard. This app is designed to get mutual availability
 - **Host**: The person who creates an event and sends out unique links to guests.
 - **Unique Link**: A unique link a host sends to a guest that allows them to submit their availability.
 - **Guest**: A person who is invited to an event.
+- **Availability Calendar**: A calendar that guests interact with to submit their availability.
+- **Mutual Calendar**: A calendar that shows a heatmap of availability of all guests for an event.
 
 ## Main Page
 
@@ -30,7 +32,12 @@ The main page is a simple "create event" form.
 - When a guest receives a link, they have two very simple actions:
   1. Enter their name, if the host did not provide a name for the guest. One they submit a name they cannot change it, only the host can.
   2. Presented with a calendar, just click the days they are available. Each click is live updated to the server.
+  3. Presented with a "I am not available" button, click it if they are not available for any dates.
 - All guests will see a heatmap of availability from everyone else on the calendar. A component under the calendar will show how many guests have responded, which is what will drive the heatmap intensity.
+
+## Mutual Calendar
+
+- The mutual calendar is a heatmap of availability from everyone else on the calendar. A component under the calendar will show how many guests have responded, which is what will drive the heatmap intensity.
 
 ## Other requirements
 
