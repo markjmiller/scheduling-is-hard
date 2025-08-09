@@ -746,17 +746,36 @@ tbody tr:last-child td {
   /* Make table responsive */
   .guests-table {
     overflow-x: auto;
+    width: 100%;
+    max-width: 100%;
   }
 
   table {
-    min-width: 600px;
+    width: 100%;
+    max-width: 100%;
+    table-layout: fixed;
+    font-size: 0.75rem;
   }
 
   thead th,
   tbody td {
-    padding: 0.75rem 0.5rem;
+    padding: 0.5rem 0.25rem;
     font-size: 0.75rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
   }
+
+  /* Mobile table column widths */
+  thead th:nth-child(1) { width: 25%; } /* Name */
+  thead th:nth-child(2) { width: 20%; } /* Status */
+  thead th:nth-child(3) { width: 35%; } /* Guest Link */
+  thead th:nth-child(4) { width: 20%; } /* Actions */
+
+  tbody td:nth-child(1) { width: 25%; }
+  tbody td:nth-child(2) { width: 20%; }
+  tbody td:nth-child(3) { width: 35%; }
+  tbody td:nth-child(4) { width: 20%; }
 }
 
 @media (max-width: 480px) {
