@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import '../css/Calendar.css';
+import { useState } from "react";
+import "../css/Calendar.css";
 
 interface CalendarProps {
   selectedDates: string[];
@@ -11,22 +11,44 @@ interface CalendarProps {
   onNotAvailableToggle?: () => void;
   showHostLegend?: boolean;
   hasSubmittedAvailability?: boolean;
-  hostAvailability?: string[];  // Host's available dates for guest view
-  isHostView?: boolean;         // Whether this is the host's own calendar
+  hostAvailability?: string[]; // Host's available dates for guest view
+  isHostView?: boolean; // Whether this is the host's own calendar
 }
 
-export default function Calendar({ selectedDates, availabilityHeatmap, onDateToggle, respondedGuests, totalGuests, isNotAvailable, onNotAvailableToggle, showHostLegend = true, hasSubmittedAvailability, hostAvailability = [], isHostView = false }: CalendarProps) {
+export default function Calendar({
+  selectedDates,
+  availabilityHeatmap,
+  onDateToggle,
+  respondedGuests,
+  totalGuests,
+  isNotAvailable,
+  onNotAvailableToggle,
+  showHostLegend = true,
+  hasSubmittedAvailability,
+  hostAvailability = [],
+  isHostView = false,
+}: CalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   // Constants
   const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
 
   // Utility functions (defined early to avoid hoisting issues)
   const formatDate = (date: Date): string => {
-    return date.toISOString().split('T')[0];
+    return date.toISOString().split("T")[0];
   };
 
   const isPastDate = (date: string): boolean => {
@@ -36,32 +58,46 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
   };
 
   // Calendar date calculations
-  const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-  const lastDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+  const firstDayOfMonth = new Date(
+    currentMonth.getFullYear(),
+    currentMonth.getMonth(),
+    1,
+  );
+  const lastDayOfMonth = new Date(
+    currentMonth.getFullYear(),
+    currentMonth.getMonth() + 1,
+    0,
+  );
   const daysInMonth = lastDayOfMonth.getDate();
   const startingDayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday
 
   // Generate array of dates for the current month
   const dates = Array.from({ length: daysInMonth }, (_, i) => {
     const day = i + 1;
-    const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+    const date = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth(),
+      day,
+    );
     return formatDate(date);
   });
 
   // Navigation functions
   const goToPreviousMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+    setCurrentMonth(
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1),
+    );
   };
 
   const goToNextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+    setCurrentMonth(
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1),
+    );
   };
 
   const goToToday = () => {
     setCurrentMonth(new Date());
   };
-
-
 
   // Availability calculation functions
   const getAvailabilityLevel = (date: string): number => {
@@ -77,14 +113,14 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
   };
 
   const getAvailabilityClass = (availabilityLevel: number): string => {
-    if (availabilityLevel === 0) return 'availability-none';
-    if (availabilityLevel <= 0.25) return 'availability-low';
-    if (availabilityLevel <= 0.5) return 'availability-medium';
-    if (availabilityLevel <= 0.75) return 'availability-high';
-    return 'availability-very-high';
+    if (availabilityLevel === 0) return "availability-none";
+    if (availabilityLevel <= 0.25) return "availability-low";
+    if (availabilityLevel <= 0.5) return "availability-medium";
+    if (availabilityLevel <= 0.75) return "availability-high";
+    return "availability-very-high";
   };
 
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
     <div className="dual-calendar-container">
@@ -92,19 +128,26 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
       <div className="calendar availability-calendar">
         <div className="calendar-title">
           <h4 style={{ marginBottom: 0 }}>
-            <i className={hasSubmittedAvailability === false ? "fas fa-user-times" : "fas fa-user-check"}></i> Your Availability
+            <i
+              className={
+                hasSubmittedAvailability === false
+                  ? "fas fa-user-times"
+                  : "fas fa-user-check"
+              }
+            ></i>{" "}
+            Your Availability
             {hasSubmittedAvailability === false && (
-              <span 
-                style={{ 
-                  backgroundColor: '#fff3cd',
-                  color: '#856404',
-                  border: '1px solid #ffeaa7',
-                  borderRadius: '12px',
-                  padding: '2px 8px',
-                  fontSize: '0.75em',
-                  fontWeight: '500',
-                  marginLeft: '8px',
-                  display: 'inline-block'
+              <span
+                style={{
+                  backgroundColor: "#fff3cd",
+                  color: "#856404",
+                  border: "1px solid #ffeaa7",
+                  borderRadius: "12px",
+                  padding: "2px 8px",
+                  fontSize: "0.75em",
+                  fontWeight: "500",
+                  marginLeft: "8px",
+                  display: "inline-block",
                 }}
               >
                 Not Submitted
@@ -113,20 +156,20 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
           </h4>
         </div>
         <div className="calendar-header">
-          <button 
-            className="nav-btn" 
+          <button
+            className="nav-btn"
             onClick={goToPreviousMonth}
             title="Previous month"
           >
             <i className="fas fa-chevron-left"></i>
           </button>
-          
+
           <h3 className="month-year">
             {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
           </h3>
-          
-          <button 
-            className="nav-btn" 
+
+          <button
+            className="nav-btn"
             onClick={goToNextMonth}
             title="Next month"
           >
@@ -135,16 +178,13 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
         </div>
 
         <div className="calendar-controls">
-          <button 
-            className="today-btn" 
-            onClick={goToToday}
-          >
+          <button className="today-btn" onClick={goToToday}>
             Today
           </button>
         </div>
         <div className="calendar-grid">
           {/* Day headers */}
-          {dayNames.map(day => (
+          {dayNames.map((day) => (
             <div key={day} className="day-header">
               {day}
             </div>
@@ -165,19 +205,17 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
             return (
               <button
                 key={date}
-                className={`calendar-day ${isSelected ? 'selected' : ''} ${isPast ? 'past' : ''} ${isToday ? 'today' : ''}`}
+                className={`calendar-day ${isSelected ? "selected" : ""} ${isPast ? "past" : ""} ${isToday ? "today" : ""}`}
                 onClick={() => !isPast && onDateToggle(date)}
                 disabled={isPast}
                 title={
-                  isPast 
-                    ? 'Past date' 
-                    : `${isSelected ? 'Remove from' : 'Add to'} your availability`
+                  isPast
+                    ? "Past date"
+                    : `${isSelected ? "Remove from" : "Add to"} your availability`
                 }
               >
                 <span className="day-number">{dayOfMonth}</span>
-                {isSelected && (
-                  <i className="fas fa-check selected-icon"></i>
-                )}
+                {isSelected && <i className="fas fa-check selected-icon"></i>}
               </button>
             );
           })}
@@ -187,7 +225,8 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
           <div className="selection-summary">
             <i className="fas fa-calendar-check"></i>
             <span>
-              {selectedDates.length} day{selectedDates.length !== 1 ? 's' : ''} selected
+              {selectedDates.length} day{selectedDates.length !== 1 ? "s" : ""}{" "}
+              selected
             </span>
           </div>
         </div>
@@ -196,13 +235,13 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
       {/* Not Available Section */}
       {onNotAvailableToggle && (
         <div className="not-available-section">
-          <button 
-            className={`not-available-btn ${isNotAvailable ? 'active' : ''}`}
+          <button
+            className={`not-available-btn ${isNotAvailable ? "active" : ""}`}
             onClick={onNotAvailableToggle}
             disabled={isNotAvailable}
           >
-            <i className="fas fa-times-circle"></i>
-            I am not available for any dates
+            <i className="fas fa-times-circle"></i>I am not available for any
+            dates
           </button>
         </div>
       )}
@@ -210,16 +249,17 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
       {/* Mutual Calendar */}
       <div className="calendar mutual-calendar">
         <div className="calendar-title">
-          <h4><i className="fas fa-chart-bar"></i> Mutual Calendar</h4>
+          <h4>
+            <i className="fas fa-chart-bar"></i> Mutual Calendar
+          </h4>
           {respondedGuests !== undefined && (
             <div className="response-stats-inline">
               <div className="stat-inline">
                 <i className="fas fa-users"></i>
                 <span className="stat-text">
-                  {totalGuests !== undefined && totalGuests >= 0 
+                  {totalGuests !== undefined && totalGuests >= 0
                     ? `${respondedGuests} of ${totalGuests} responses`
-                    : `${respondedGuests} responded`
-                  }
+                    : `${respondedGuests} responded`}
                 </span>
               </div>
             </div>
@@ -228,7 +268,7 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
 
         <div className="calendar-grid">
           {/* Day headers */}
-          {dayNames.map(day => (
+          {dayNames.map((day) => (
             <div key={day} className="day-header">
               {day}
             </div>
@@ -236,7 +276,10 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
 
           {/* Empty cells for days before the first day of the month */}
           {Array.from({ length: startingDayOfWeek }, (_, i) => (
-            <div key={`empty-heatmap-${i}`} className="calendar-day empty"></div>
+            <div
+              key={`empty-heatmap-${i}`}
+              className="calendar-day empty"
+            ></div>
           ))}
 
           {/* Calendar days - heatmap style */}
@@ -248,17 +291,19 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
             const isToday = date === formatDate(new Date());
             // For guest views, check host availability from the provided hostAvailability array
             // For host views, don't show host icons (since they're editing their own availability)
-            const isHostAvailable = isHostView ? false : hostAvailability.includes(date);
+            const isHostAvailable = isHostView
+              ? false
+              : hostAvailability.includes(date);
             const is100Percent = availabilityLevel === 1.0;
 
             return (
               <div
                 key={`heatmap-${date}`}
-                className={`calendar-day heatmap-day ${availabilityClass} ${isPast ? 'past' : ''} ${isToday ? 'today' : ''}`}
+                className={`calendar-day heatmap-day ${availabilityClass} ${isPast ? "past" : ""} ${isToday ? "today" : ""}`}
                 title={
-                  isPast 
-                    ? 'Past date' 
-                    : `${getGuestCountForDate(date)} of ${respondedGuests || 'unknown'} guests available${isHostAvailable ? ' (Host available)' : ''}${is100Percent ? ' - 100% available!' : ''}`
+                  isPast
+                    ? "Past date"
+                    : `${getGuestCountForDate(date)} of ${respondedGuests || "unknown"} guests available${isHostAvailable ? " (Host available)" : ""}${is100Percent ? " - 100% available!" : ""}`
                 }
               >
                 <span className="day-number">{dayOfMonth}</span>
@@ -267,14 +312,23 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
                     {getGuestCountForDate(date)}
                   </span>
                 )}
-                
+
                 {/* Host availability and 100% indicators */}
                 <div className="date-indicators">
-                  {isHostAvailable && !isPast && !is100Percent && !isHostView && (
-                    <i className="fas fa-user host-available-icon" title="Host is available"></i>
-                  )}
+                  {isHostAvailable &&
+                    !isPast &&
+                    !is100Percent &&
+                    !isHostView && (
+                      <i
+                        className="fas fa-user host-available-icon"
+                        title="Host is available"
+                      ></i>
+                    )}
                   {is100Percent && availabilityLevel > 0 && !isPast && (
-                    <i className="fas fa-star perfect-availability-icon" title="100% availability!"></i>
+                    <i
+                      className="fas fa-star perfect-availability-icon"
+                      title="100% availability!"
+                    ></i>
                   )}
                 </div>
               </div>
@@ -303,11 +357,12 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
               <div className="legend-icon-demo">
                 <i className="fas fa-star perfect-availability-icon"></i>
               </div>
-              <span className="legend-text">100% availability for responses</span>
+              <span className="legend-text">
+                100% availability for responses
+              </span>
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );

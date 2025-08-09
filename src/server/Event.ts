@@ -26,39 +26,42 @@ export class Event extends DurableObject<Env> {
   }
 
   private async getId(): Promise<string> {
-    const id = await this.ctx.storage.get<string>('id');
+    const id = await this.ctx.storage.get<string>("id");
     if (!id) {
-      throw new Error('ID not set');
+      throw new Error("ID not set");
     }
     return id;
   }
 
+  async init(
+    eventId: string,
+    request: CreateEventRequest,
+  ): Promise<EventType & { hostGuestId: string }> {
+    await this.ctx.storage.put("id", eventId);
 
-
-  async init(eventId: string, request: CreateEventRequest): Promise<EventType & { hostGuestId: string }> {
-    await this.ctx.storage.put('id', eventId);
-    
     const now = new Date().toISOString();
-    
+
     const hostGuestId = generateGuestId();
-    
+
     const eventData: EventData = {
       id: eventId,
       name: request.name,
       description: request.description,
       createdAt: now,
       updatedAt: now,
-      hostGuestId: hostGuestId
+      hostGuestId: hostGuestId,
     };
 
-    await this.ctx.storage.put('eventData', eventData);
-    
-    const hostGuestDO = this.env.GUEST.get(this.env.GUEST.idFromName(hostGuestId));
+    await this.ctx.storage.put("eventData", eventData);
+
+    const hostGuestDO = this.env.GUEST.get(
+      this.env.GUEST.idFromName(hostGuestId),
+    );
     await hostGuestDO.init(hostGuestId, eventId);
     await hostGuestDO.update({
-      name: request.hostName
+      name: request.hostName,
     });
-    
+
     const hostGuestData: GuestData = {
       id: hostGuestId,
       name: request.hostName,
@@ -66,8 +69,8 @@ export class Event extends DurableObject<Env> {
       updatedAt: now,
       // availability is undefined initially (host hasn't responded yet)
     };
-    
-    await this.ctx.storage.put('guests', { [hostGuestId]: hostGuestData });
+
+    await this.ctx.storage.put("guests", { [hostGuestId]: hostGuestData });
 
     return {
       id: eventId,
@@ -76,13 +79,13 @@ export class Event extends DurableObject<Env> {
       url: `/event/${eventId}`,
       createdAt: eventData.createdAt,
       updatedAt: eventData.updatedAt,
-      hostGuestId: hostGuestId
+      hostGuestId: hostGuestId,
     } as EventType & { hostGuestId: string };
   }
 
   async get(): Promise<EventType | null> {
-    const eventData = await this.ctx.storage.get<EventData>('eventData');
-    
+    const eventData = await this.ctx.storage.get<EventData>("eventData");
+
     if (!eventData) {
       return null;
     }
@@ -94,20 +97,23 @@ export class Event extends DurableObject<Env> {
       url: `/event/${await this.getId()}`,
       createdAt: eventData.createdAt,
       updatedAt: eventData.updatedAt,
-      hostGuestId: eventData.hostGuestId
+      hostGuestId: eventData.hostGuestId,
     } as EventType & { hostGuestId?: string };
   }
 
-  async update(request: { name?: string; description?: string }): Promise<EventType | null> {
-    const eventData = await this.ctx.storage.get<EventData>('eventData');
-    
+  async update(request: {
+    name?: string;
+    description?: string;
+  }): Promise<EventType | null> {
+    const eventData = await this.ctx.storage.get<EventData>("eventData");
+
     if (!eventData) {
       return null;
     }
 
     const updatedEventData: EventData = {
       ...eventData,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
 
     if (request.name !== undefined) {
@@ -118,7 +124,7 @@ export class Event extends DurableObject<Env> {
       updatedEventData.description = request.description;
     }
 
-    await this.ctx.storage.put('eventData', updatedEventData);
+    await this.ctx.storage.put("eventData", updatedEventData);
 
     return {
       id: updatedEventData.id,
@@ -127,33 +133,34 @@ export class Event extends DurableObject<Env> {
       url: `/event/${await this.getId()}`,
       createdAt: updatedEventData.createdAt,
       updatedAt: updatedEventData.updatedAt,
-      hostGuestId: updatedEventData.hostGuestId
+      hostGuestId: updatedEventData.hostGuestId,
     } as EventType;
   }
 
   async generateGuestLink(guestName?: string): Promise<GuestLink> {
-    const eventData = await this.ctx.storage.get<EventData>('eventData');
-    
+    const eventData = await this.ctx.storage.get<EventData>("eventData");
+
     if (!eventData) {
-      throw new Error('Event not found');
+      throw new Error("Event not found");
     }
 
     const eventId = await this.getId();
     const guestId = generateGuestId();
     const now = new Date().toISOString();
-    
+
     const guestData: GuestData = {
       id: guestId,
       name: guestName,
       availability: undefined,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     };
 
     // Only store guest ID in Event storage (not full guest data)
-    const guestList = await this.ctx.storage.get<Record<string, boolean>>('guests') || {};
+    const guestList =
+      (await this.ctx.storage.get<Record<string, boolean>>("guests")) || {};
     guestList[guestId] = true;
-    await this.ctx.storage.put('guests', guestList);
+    await this.ctx.storage.put("guests", guestList);
 
     // Store full guest data in Guest DO
     const guestDOId = this.env.GUEST.idFromName(guestId);
@@ -163,15 +170,16 @@ export class Event extends DurableObject<Env> {
 
     return {
       guestId: guestId,
-      url: `/event/${eventId}/guest/${guestId}`
+      url: `/event/${eventId}/guest/${guestId}`,
     };
   }
 
   // Get all guests for an event
   async getEventGuests(): Promise<GuestData[]> {
-    const guestList = await this.ctx.storage.get<Record<string, boolean>>('guests') || {};
+    const guestList =
+      (await this.ctx.storage.get<Record<string, boolean>>("guests")) || {};
     const guestIds = Object.keys(guestList);
-    
+
     const guests: GuestData[] = [];
     for (const guestId of guestIds) {
       const guestDOId = this.env.GUEST.idFromName(guestId);
@@ -181,17 +189,18 @@ export class Event extends DurableObject<Env> {
         guests.push(guestData);
       }
     }
-    
+
     return guests;
   }
 
   // Remove guest from event
   async removeGuest(guestId: string): Promise<void> {
-    const guestList = await this.ctx.storage.get<Record<string, boolean>>('guests') || {};
-    
+    const guestList =
+      (await this.ctx.storage.get<Record<string, boolean>>("guests")) || {};
+
     if (guestList[guestId]) {
       delete guestList[guestId];
-      await this.ctx.storage.put('guests', guestList);
+      await this.ctx.storage.put("guests", guestList);
     }
   }
 }

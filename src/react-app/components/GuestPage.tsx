@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
-import Calendar from './Calendar.tsx';
-import { ApiService } from '../services/api';
-import { POLLING_INTERVALS } from '../config/polling';
-import '../css/GuestPage.css';
-import type { components } from '../../../types/api';
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useParams } from "react-router-dom";
+import Calendar from "./Calendar.tsx";
+import { ApiService } from "../services/api";
+import { POLLING_INTERVALS } from "../config/polling";
+import "../css/GuestPage.css";
+import type { components } from "../../../types/api";
 
 type Event = components["schemas"]["Event"];
 type Guest = components["schemas"]["Guest"];
@@ -13,10 +13,12 @@ export default function GuestPage() {
   const { guestId } = useParams<{ guestId: string }>();
   const [event, setEvent] = useState<Event | null>(null);
   const [, setGuest] = useState<Guest | null>(null);
-  const [guestName, setGuestName] = useState('');
+  const [guestName, setGuestName] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
-  const [availabilityHeatmap, setAvailabilityHeatmap] = useState<Map<string, number>>(new Map());
+  const [availabilityHeatmap, setAvailabilityHeatmap] = useState<
+    Map<string, number>
+  >(new Map());
   const [totalGuests, setTotalGuests] = useState(0);
   const [respondedGuests, setRespondedGuests] = useState(0);
   const [isNotAvailable, setIsNotAvailable] = useState(false);
@@ -27,8 +29,8 @@ export default function GuestPage() {
   // Helper function to convert guest data to heatmap
   const createHeatmapFromGuests = (guests: any[]) => {
     const heatmap = new Map<string, number>();
-    
-    guests.forEach(guest => {
+
+    guests.forEach((guest) => {
       if (guest.hasResponded && guest.availability) {
         guest.availability.forEach((date: string) => {
           const currentCount = heatmap.get(date) || 0;
@@ -36,13 +38,13 @@ export default function GuestPage() {
         });
       }
     });
-    
+
     return heatmap;
   };
 
   // Helper function to extract host availability
   const extractHostAvailability = (guests: any[]) => {
-    const host = guests.find(guest => guest.isHost);
+    const host = guests.find((guest) => guest.isHost);
     return host?.availability || [];
   };
 
@@ -63,30 +65,30 @@ export default function GuestPage() {
       try {
         // Poll event details and mutual calendar updates
         const eventData = await ApiService.getEventForGuest(guestId!);
-        
+
         if (!eventData) {
-          setError('EVENT_NOT_FOUND');
+          setError("EVENT_NOT_FOUND");
           return;
         }
-        
+
         // Update event information
         setEvent({
-          id: '', // We don't have eventId in the response, which is intentional for security
+          id: "", // We don't have eventId in the response, which is intentional for security
           name: eventData.name,
           description: eventData.description,
-          hostGuestId: '',
-          createdAt: '',
-          updatedAt: ''
+          hostGuestId: "",
+          createdAt: "",
+          updatedAt: "",
         });
-        
+
         // Update availability heatmap from guest data
         setAvailabilityHeatmap(createHeatmapFromGuests(eventData.guests));
         setTotalGuests(eventData.totalGuests);
         setRespondedGuests(eventData.respondedGuests);
-        
+
         // Extract and set host availability
         setHostAvailability(extractHostAvailability(eventData.guests));
-        
+
         // Poll user's own availability calendar to sync across sessions
         if (guestId) {
           const guestData = await ApiService.getGuest(guestId);
@@ -96,18 +98,21 @@ export default function GuestPage() {
         }
       } catch (err) {
         // Silently fail to avoid disrupting UX with polling errors
-        console.warn('Failed to poll updates:', err);
+        console.warn("Failed to poll updates:", err);
       }
     };
 
     // Start polling for real-time mutual calendar updates
-    pollIntervalRef.current = setInterval(pollAvailability, POLLING_INTERVALS.GUEST_PAGE.EVENT_AND_AVAILABILITY);
+    pollIntervalRef.current = setInterval(
+      pollAvailability,
+      POLLING_INTERVALS.GUEST_PAGE.EVENT_AND_AVAILABILITY,
+    );
   }, [guestId]);
 
   // Poll for real-time availability updates
   useEffect(() => {
     if (!guestId) return;
-    
+
     resetPollInterval();
 
     return () => {
@@ -122,17 +127,17 @@ export default function GuestPage() {
 
     try {
       setLoading(true);
-      
+
       const guestData = await ApiService.getGuest(guestId);
       if (!guestData) {
-        setError('GUEST_NOT_FOUND');
+        setError("GUEST_NOT_FOUND");
         return;
       }
-      
+
       setGuest(guestData);
-      setGuestName(guestData.name || '');
+      setGuestName(guestData.name || "");
       setIsEditingName(!guestData.name); // Edit name if not provided
-      
+
       // Set initial selected dates from guest availability
       if (guestData.availability) {
         setSelectedDates(guestData.availability);
@@ -140,37 +145,39 @@ export default function GuestPage() {
 
       // Now load event and availability data
       const eventData = await ApiService.getEventForGuest(guestId);
-      
+
       if (!eventData) {
-        setError('EVENT_NOT_FOUND');
+        setError("EVENT_NOT_FOUND");
         return;
       }
-      
+
       // Set event information
       setEvent({
-        id: '', // We don't have eventId in the response, which is intentional for security
+        id: "", // We don't have eventId in the response, which is intentional for security
         name: eventData.name,
         description: eventData.description,
-        hostGuestId: '',
-        createdAt: '',
-        updatedAt: ''
+        hostGuestId: "",
+        createdAt: "",
+        updatedAt: "",
       });
-      
+
       // Set availability heatmap from guest data
       setAvailabilityHeatmap(createHeatmapFromGuests(eventData.guests));
       setTotalGuests(eventData.totalGuests);
       setRespondedGuests(eventData.respondedGuests);
-      
+
       // Extract and set host availability
       setHostAvailability(extractHostAvailability(eventData.guests));
-
     } catch (err) {
-      if (err instanceof Error && (err.message.includes('404') || err.message.includes('Not Found'))) {
-        setError('GUEST_NOT_FOUND');
+      if (
+        err instanceof Error &&
+        (err.message.includes("404") || err.message.includes("Not Found"))
+      ) {
+        setError("GUEST_NOT_FOUND");
       } else {
-        setError('FAILED_TO_LOAD');
+        setError("FAILED_TO_LOAD");
       }
-      console.error('Error loading guest data:', err);
+      console.error("Error loading guest data:", err);
     } finally {
       setLoading(false);
     }
@@ -184,7 +191,7 @@ export default function GuestPage() {
       await ApiService.updateGuestName(guestId, guestName.trim());
       setIsEditingName(false);
     } catch (error) {
-      console.error('Error updating guest name:', error);
+      console.error("Error updating guest name:", error);
     }
   };
 
@@ -194,18 +201,18 @@ export default function GuestPage() {
     try {
       const newNotAvailableState = !isNotAvailable;
       setIsNotAvailable(newNotAvailableState);
-      
+
       if (newNotAvailableState) {
         // User is indicating they're not available - clear all selected dates
         setSelectedDates([]);
-        
+
         // Reset poll interval to prevent server from overwriting user input
         resetPollInterval();
-        
+
         await ApiService.updateGuestAvailability(guestId, []);
       }
     } catch (error) {
-      console.error('Error updating not available status:', error);
+      console.error("Error updating not available status:", error);
       setIsNotAvailable(false);
     }
   };
@@ -214,7 +221,7 @@ export default function GuestPage() {
     if (!guestId) return;
 
     const newSelectedDates = selectedDates.includes(date)
-      ? selectedDates.filter(d => d !== date)
+      ? selectedDates.filter((d) => d !== date)
       : [...selectedDates, date];
 
     setSelectedDates(newSelectedDates);
@@ -229,11 +236,11 @@ export default function GuestPage() {
       const heatmapData = await ApiService.getEventForGuest(guestId);
       setAvailabilityHeatmap(createHeatmapFromGuests(heatmapData.guests));
       setRespondedGuests(heatmapData.respondedGuests);
-      
+
       // Update host availability
       setHostAvailability(extractHostAvailability(heatmapData.guests));
     } catch (err) {
-      console.error('Error updating availability:', err);
+      console.error("Error updating availability:", err);
       // Revert the change on error
       setSelectedDates(selectedDates);
     }
@@ -254,17 +261,24 @@ export default function GuestPage() {
     return (
       <div className="guest-page">
         <div className="error">
-          {error === 'GUEST_NOT_FOUND' ? (
+          {error === "GUEST_NOT_FOUND" ? (
             <>
               <i className="fas fa-user-slash"></i>
               <h2>Guest Link Not Found</h2>
-              <p>This guest invitation link is invalid or may have been deleted. Please check the link or contact the event organizer for a new invitation.</p>
+              <p>
+                This guest invitation link is invalid or may have been deleted.
+                Please check the link or contact the event organizer for a new
+                invitation.
+              </p>
             </>
           ) : (
             <>
               <i className="fas fa-exclamation-triangle"></i>
               <h2>Failed to Load Event</h2>
-              <p>We encountered an error loading the event data. Please try refreshing the page or contact support if the issue persists.</p>
+              <p>
+                We encountered an error loading the event data. Please try
+                refreshing the page or contact support if the issue persists.
+              </p>
             </>
           )}
         </div>
@@ -287,7 +301,7 @@ export default function GuestPage() {
   return (
     <div className="guest-page">
       <header className="guest-header">
-      {isEditingName ? (
+        {isEditingName ? (
           <form className="name-form" onSubmit={handleNameSubmit}>
             <div className="name-input-group">
               <input
@@ -309,7 +323,7 @@ export default function GuestPage() {
           <div className="guest-info">
             <p className="guest-name">
               Welcome, <strong>{guestName}</strong>
-              <button 
+              <button
                 className="edit-name-btn"
                 onClick={() => setIsEditingName(true)}
                 title="Edit name"
@@ -325,7 +339,10 @@ export default function GuestPage() {
         </div>
         <div className="event-link-warning">
           <i className="fas fa-exclamation-triangle"></i>
-          <span>Your guest link can be edited by anyone with access. Treat it as a secret!</span>
+          <span>
+            Your guest link can be edited by anyone with access. Treat it as a
+            secret!
+          </span>
         </div>
       </header>
 
@@ -333,9 +350,10 @@ export default function GuestPage() {
         <div className="availability-section">
           <h2>Select Your Available Days</h2>
           <p className="calendar-instructions">
-            Click or tap on the days you're available. Your selections are automatically saved.
+            Click or tap on the days you're available. Your selections are
+            automatically saved.
           </p>
-          
+
           <Calendar
             selectedDates={selectedDates}
             availabilityHeatmap={availabilityHeatmap}
@@ -344,15 +362,13 @@ export default function GuestPage() {
             totalGuests={totalGuests}
             isNotAvailable={isNotAvailable}
             onNotAvailableToggle={handleNotAvailable}
-            hasSubmittedAvailability={selectedDates.length > 0 || isNotAvailable}
+            hasSubmittedAvailability={
+              selectedDates.length > 0 || isNotAvailable
+            }
             hostAvailability={hostAvailability}
             isHostView={false}
           />
-          
-
         </div>
-
-
       </main>
     </div>
   );

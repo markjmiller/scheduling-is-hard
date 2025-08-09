@@ -1,22 +1,24 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ApiService } from '../services/api';
-import type { components } from '../../../types/api';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ApiService } from "../services/api";
+import type { components } from "../../../types/api";
 
 type CreateEventRequest = components["schemas"]["CreateEventRequest"];
 
 export default function CreateEventForm() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<CreateEventRequest>({
-    name: '',
-    description: '',
-    hostName: '',
+    name: "",
+    description: "",
+    hostName: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
@@ -24,7 +26,12 @@ export default function CreateEventForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.description.trim() || !formData.hostName.trim()) return;
+    if (
+      !formData.name.trim() ||
+      !formData.description.trim() ||
+      !formData.hostName.trim()
+    )
+      return;
 
     setIsSubmitting(true);
     try {
@@ -32,21 +39,25 @@ export default function CreateEventForm() {
       // Navigate directly to the host screen for the created event
       navigate(`/event/${event.id}`);
     } catch (error) {
-      console.error('Failed to create event:', error);
+      console.error("Failed to create event:", error);
       // In a real app, show error notification
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const isFormValid = formData.name.trim() && formData.description.trim() && formData.hostName.trim();
+  const isFormValid =
+    formData.name.trim() &&
+    formData.description.trim() &&
+    formData.hostName.trim();
 
   return (
     <div className="create-event-form">
       <div className="form-header">
         <h2>Create New Event</h2>
         <p className="form-description">
-          Get started by creating an event to coordinate availability with your guests.
+          Get started by creating an event to coordinate availability with your
+          guests.
         </p>
       </div>
 
@@ -107,8 +118,6 @@ export default function CreateEventForm() {
             disabled={isSubmitting}
           />
         </div>
-
-
 
         <div className="form-actions">
           <button

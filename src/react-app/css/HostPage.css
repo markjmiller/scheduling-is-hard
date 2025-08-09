@@ -9,7 +9,8 @@
 }
 
 /* Loading and Error States */
-.loading, .error {
+.loading,
+.error {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -23,7 +24,8 @@
   max-width: 500px;
 }
 
-.loading i, .error i {
+.loading i,
+.error i {
   font-size: 3rem;
   margin-bottom: 1rem;
   color: #667eea;
@@ -33,13 +35,15 @@
   color: #e53e3e;
 }
 
-.loading h2, .error h2 {
+.loading h2,
+.error h2 {
   color: #2d3748;
   margin-bottom: 0.5rem;
   font-size: 1.5rem;
 }
 
-.loading p, .error p {
+.loading p,
+.error p {
   color: #718096;
   font-size: 1rem;
   margin: 0;
@@ -228,7 +232,8 @@
   justify-content: flex-end;
 }
 
-.save-btn, .cancel-btn {
+.save-btn,
+.cancel-btn {
   padding: 0.75rem 1.5rem;
   border-radius: 8px;
   font-size: 0.875rem;
@@ -308,7 +313,7 @@
   background: rgba(255, 255, 255, 0.2);
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
   font-size: 0.9rem;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -455,7 +460,7 @@
   color: #718096;
   font-weight: 400;
   opacity: 0.8;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
   letter-spacing: 0.025em;
 }
 
@@ -633,7 +638,8 @@ tbody tr:last-child td {
   gap: 0.5rem;
 }
 
-.edit-guest-btn, .delete-guest-btn {
+.edit-guest-btn,
+.delete-guest-btn {
   width: 32px;
   height: 32px;
   border-radius: 6px;

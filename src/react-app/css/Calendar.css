@@ -391,11 +391,12 @@
 }
 
 @keyframes sparkle {
-  0%, 100% { 
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }
-  50% { 
+  50% {
     opacity: 0.8;
     transform: scale(1.1);
   }
@@ -527,83 +528,83 @@
 }
 
 @media (max-width: 640px) {
-    .calendar {
-      padding: 0.5rem;
-    }
-
-    .calendar-header {
-      margin-bottom: 0.75rem;
-    }
-
-    .nav-btn {
-      width: 40px;
-      height: 40px;
-      font-size: 0.875rem;
-    }
-
-    .month-year {
-      font-size: 1.1rem;
-    }
-
-    .calendar-grid {
-      gap: 0.5px;
-    }
-
-    .day-header {
-      padding: 0.5rem 0.25rem;
-      font-size: 0.6875rem;
-    }
-
-    .calendar-day {
-      min-height: 48px;
-      padding: 0.25rem;
-    }
-
-    .day-number {
-      font-size: 0.8125rem;
-    }
-
-    .selected-icon {
-      font-size: 0.5625rem;
-      top: 0.125rem;
-      right: 0.125rem;
-    }
-
-    .availability-indicator {
-      width: 16px;
-      height: 2px;
-    }
-
-    .availability-percentage {
-      font-size: 0.5625rem;
-    }
-
-    .selection-summary {
-      font-size: 0.8125rem;
-    }
-
-    .calendar-title {
-      padding: 0.5rem;
-    }
-
-    .calendar-title h4 {
-      font-size: 0.9rem;
-    }
-
-    .calendar-title p {
-      font-size: 0.8125rem;
-    }
-
-    .heatmap-legend {
-      font-size: 0.6875rem;
-      padding: 0.5rem;
-    }
-
-    .legend-color {
-      width: 10px;
-      height: 10px;
-    }
+  .calendar {
+    padding: 0.5rem;
   }
+
+  .calendar-header {
+    margin-bottom: 0.75rem;
+  }
+
+  .nav-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 0.875rem;
+  }
+
+  .month-year {
+    font-size: 1.1rem;
+  }
+
+  .calendar-grid {
+    gap: 0.5px;
+  }
+
+  .day-header {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.6875rem;
+  }
+
+  .calendar-day {
+    min-height: 48px;
+    padding: 0.25rem;
+  }
+
+  .day-number {
+    font-size: 0.8125rem;
+  }
+
+  .selected-icon {
+    font-size: 0.5625rem;
+    top: 0.125rem;
+    right: 0.125rem;
+  }
+
+  .availability-indicator {
+    width: 16px;
+    height: 2px;
+  }
+
+  .availability-percentage {
+    font-size: 0.5625rem;
+  }
+
+  .selection-summary {
+    font-size: 0.8125rem;
+  }
+
+  .calendar-title {
+    padding: 0.5rem;
+  }
+
+  .calendar-title h4 {
+    font-size: 0.9rem;
+  }
+
+  .calendar-title p {
+    font-size: 0.8125rem;
+  }
+
+  .heatmap-legend {
+    font-size: 0.6875rem;
+    padding: 0.5rem;
+  }
+
+  .legend-color {
+    width: 10px;
+    height: 10px;
+  }
+}
 
 /* Large screens */
 @media (min-width: 768px) {
@@ -611,11 +612,11 @@
     min-height: 64px;
     padding: 0.75rem;
   }
-  
+
   .day-number {
     font-size: 1rem;
   }
-  
+
   .month-year {
     font-size: 1.5rem;
   }
@@ -627,11 +628,11 @@
     background: rgba(102, 126, 234, 0.2);
     transform: scale(0.95);
   }
-  
+
   .nav-btn:active {
     background: rgba(102, 126, 234, 0.1);
   }
-  
+
   .today-btn:active {
     background: #4c51bf;
   }
