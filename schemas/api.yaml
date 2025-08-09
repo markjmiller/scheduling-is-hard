@@ -301,9 +301,35 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AvailabilityHeatmap'
+                $ref: '#/components/schemas/EventAvailabilityResponse'
         404:
           description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /guests/{guestId}/event:
+    get:
+      summary: Get event details and availability for guest
+      description: Retrieve event information (without eventId) and aggregated availability data for the event associated with this guest
+      parameters:
+        - name: guestId
+          in: path
+          required: true
+          description: 8-character alphanumeric guest identifier
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9]{8}$'
+      responses:
+        200:
+          description: Event details and availability data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuestEventResponse'
+        404:
+          description: Guest not found or associated event not found
           content:
             application/json:
               schema:
@@ -391,7 +417,6 @@ components:
       type: object
       required:
         - id
-        - eventId
         - createdAt
         - updatedAt
       properties:
@@ -400,11 +425,6 @@ components:
           pattern: '^[A-Za-z0-9]{8}$'
           description: 8-character alphanumeric guest identifier
           example: "DEF456ZW"
-        eventId:
-          type: string
-          pattern: '^[A-Za-z0-9]{8}$'
-          description: Associated event identifier
-          example: "ABC123XY"
         name:
           type: string
           maxLength: 100
@@ -551,6 +571,99 @@ components:
               available: 1
               total: 3
     
+    GuestAvailabilityInfo:
+      type: object
+      required:
+        - id
+        - name
+        - availability
+        - isHost
+        - hasResponded
+      properties:
+        id:
+          type: string
+          pattern: '^[A-Za-z0-9]{8}$'
+          description: Guest identifier
+          example: "DEF456ZW"
+        name:
+          type: string
+          maxLength: 100
+          description: Guest name
+          example: "John Doe"
+        availability:
+          type: array
+          items:
+            type: string
+            format: date
+          description: List of available dates
+          example: ["2024-01-15", "2024-01-16", "2024-01-18"]
+        isHost:
+          type: boolean
+          description: Whether this guest is the event host
+          example: false
+        hasResponded:
+          type: boolean
+          description: Whether this guest has submitted their availability
+          example: true
+
+    EventAvailabilityResponse:
+      type: object
+      required:
+        - totalGuests
+        - respondedGuests
+        - guests
+      properties:
+        totalGuests:
+          type: integer
+          minimum: 0
+          description: Total number of guests invited
+          example: 5
+        respondedGuests:
+          type: integer
+          minimum: 0
+          description: Number of guests who have submitted availability
+          example: 3
+        guests:
+          type: array
+          items:
+            $ref: '#/components/schemas/GuestAvailabilityInfo'
+          description: List of all guests with their availability data
+
+    GuestEventResponse:
+      type: object
+      required:
+        - name
+        - description
+        - totalGuests
+        - respondedGuests
+        - guests
+      properties:
+        name:
+          type: string
+          maxLength: 200
+          description: Event name
+          example: "Team Planning Meeting"
+        description:
+          type: string
+          maxLength: 2000
+          description: Long-form event description
+          example: "Let's coordinate our availability for the quarterly planning session"
+        totalGuests:
+          type: integer
+          minimum: 0
+          description: Total number of guests invited
+          example: 5
+        respondedGuests:
+          type: integer
+          minimum: 0
+          description: Number of guests who have submitted availability
+          example: 3
+        guests:
+          type: array
+          items:
+            $ref: '#/components/schemas/GuestAvailabilityInfo'
+          description: List of all guests with their availability data
+
     Error:
       type: object
       required:

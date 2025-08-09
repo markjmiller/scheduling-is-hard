@@ -22,6 +22,7 @@ function generateId(): string {
 declare module "hono" {
   interface ContextVariableMap {
     event: DurableObjectStub<Event>;
+    guest: DurableObjectStub<Guest>;
   }
 }
 
@@ -37,12 +38,12 @@ app.get("/docs", async (c) =>
 
 const api = new Hono<{ Bindings: Cloudflare.Env }>();
 
-function getEvent(env: Cloudflare.Env, eventId: string) {
+function getEvent(env: Cloudflare.Env, eventId: string): DurableObjectStub<Event> {
   const id = env.EVENT.idFromName(eventId);
   return env.EVENT.get(id);
 }
 
-function getGuest(env: Cloudflare.Env, guestId: string) {
+function getGuest(env: Cloudflare.Env, guestId: string): DurableObjectStub<Guest> {
   const id = env.GUEST.idFromName(guestId);
   return env.GUEST.get(id);
 }
@@ -62,7 +63,7 @@ api.post('/events',
     const eventId = generateId();
     const eventDO = getEvent(c.env, eventId);
     
-    const event = await eventDO.createEvent(eventId, eventData);
+    const event = await eventDO.init(eventId, eventData);
     return c.json(event);
   }
 );
@@ -78,7 +79,7 @@ api.get('/events/:eventId',
     const { eventId } = c.req.valid('param');
     const eventDO = getEvent(c.env, eventId);
     
-    const event = await eventDO.getEvent(eventId);
+    const event = await eventDO.get();
     
     if (!event) {
       return c.json({ error: 'Event not found' }, 404);
@@ -112,7 +113,7 @@ api.put('/events/:eventId',
     const updateData = c.req.valid('json');
     
     const eventDO = getEvent(c.env, eventId);
-    const updatedEvent = await eventDO.updateEvent(eventId, updateData);
+    const updatedEvent = await eventDO.update(updateData);
     
     if (!updatedEvent) {
       return c.json({ error: 'Event not found' }, 404);
@@ -140,7 +141,7 @@ api.post('/events/:eventId/guests',
     
     try {
       // Generate guest link via Event DO
-      const guestLink = await eventDO.generateGuestLink(eventId, guestName);
+      const guestLink = await eventDO.generateGuestLink(guestName);
       return c.json(guestLink);
     } catch (error) {
       return c.json({ error: 'Failed to generate guest link' }, 400);
@@ -160,8 +161,25 @@ api.get('/events/:eventId/availability',
     const eventDO = getEvent(c.env, eventId);
     
     try {
-      const availability = await eventDO.getEventAvailability(eventId);
-      return c.json(availability);
+      const event = await eventDO.get();
+      const guests = await eventDO.getEventGuests();
+      
+      // Transform guests to include host status and response status
+      const guestsWithStatus = guests.map(guest => ({
+        id: guest.id,
+        name: guest.name || '',
+        availability: guest.availability || [],
+        isHost: guest.id === event?.hostGuestId,
+        hasResponded: guest.availability !== undefined && guest.availability !== null
+      }));
+      
+      const respondedGuests = guestsWithStatus.filter(g => g.hasResponded).length;
+      
+      return c.json({
+        totalGuests: guestsWithStatus.length,
+        respondedGuests: respondedGuests,
+        guests: guestsWithStatus
+      });
     } catch (error) {
       return c.json({ error: 'Failed to get availability' }, 400);
     }
@@ -180,7 +198,7 @@ api.get('/guests/:guestId',
     
     try {
       const guestDO = getGuest(c.env, guestId);
-      const guest = await guestDO.getGuest(guestId);
+      const guest = await guestDO.get();
       
       if (!guest) {
         return c.json({ error: 'Guest not found' }, 404);
@@ -214,17 +232,13 @@ api.put('/guests/:guestId/name',
     
     try {
       const guestDO = getGuest(c.env, guestId);
-      const guestData = await guestDO.getGuest(guestId);
+      const guestData = await guestDO.get();
       
       if (!guestData) {
         return c.json({ error: 'Guest not found' }, 404);
       }
       
-      const updatedGuest = await guestDO.updateGuest(guestId, guestData.eventId, { name: name.trim() });
-      
-      // Also update Event DO to keep both storage locations in sync
-      const eventDO = getEvent(c.env, guestData.eventId);
-      await eventDO.updateGuestName(guestData.eventId, guestId, name.trim());
+      const updatedGuest = await guestDO.update({ name: name.trim() });
       
       return c.json(updatedGuest);
     } catch (error) {
@@ -254,22 +268,60 @@ api.put('/guests/:guestId/availability',
     
     try {
       const guestDO = getGuest(c.env, guestId);
-      const guestData = await guestDO.getGuest(guestId);
+      const guestData = await guestDO.get();
       
       if (!guestData) {
         return c.json({ error: 'Guest not found' }, 404);
       }
       
-      const updatedGuest = await guestDO.updateGuest(guestId, guestData.eventId, { availability });
-      
-      // Also update Event DO to keep both storage locations in sync
-      const eventDO = getEvent(c.env, guestData.eventId);
-      await eventDO.updateGuestAvailability(guestData.eventId, guestId, availability);
+      const updatedGuest = await guestDO.update({ availability });
       
       return c.json(updatedGuest);
     } catch (error) {
       console.error(`Failed to update availability for guest ${guestId}:`, error);
       return c.json({ error: 'Failed to update availability' }, 400);
+    }
+  }
+);
+
+api.get('guests/:guestId/event',
+  validator('param', (value, c) => {
+    if (!isValidId(value.guestId)) {
+      return c.text('Invalid guest ID', 400);
+    }
+    return value;
+  }),
+  async (c) => {
+    const { guestId } = c.req.valid('param');
+    const guestDO = getGuest(c.env, guestId);
+    
+    try {
+      const eventId = await guestDO.getEventId();
+      const eventDO = getEvent(c.env, eventId);
+      const event = await eventDO.get();
+      const guests = await eventDO.getEventGuests();
+      
+      // Transform guests to include host status and response status
+      const guestsWithStatus = guests.map(guest => ({
+        id: guest.id,
+        name: guest.name || '',
+        availability: guest.availability || [],
+        isHost: guest.id === event?.hostGuestId,
+        hasResponded: guest.availability !== undefined && guest.availability !== null
+      }));
+      
+      const respondedGuests = guestsWithStatus.filter(g => g.hasResponded).length;
+      
+      // Return event info and detailed guest availability data
+      return c.json({
+        name: event!.name,
+        description: event!.description,
+        totalGuests: guestsWithStatus.length,
+        respondedGuests: respondedGuests,
+        guests: guestsWithStatus
+      });
+    } catch (error) {
+      return c.json({ error: 'Failed to get availability' }, 400);
     }
   }
 );
@@ -286,7 +338,7 @@ api.get('/events/:eventId/guests',
     const eventDO = getEvent(c.env, eventId);
     
     try {
-      const guests = await eventDO.getEventGuests(eventId);
+      const guests = await eventDO.getEventGuests();
       
       // Transform guests to include hasResponded status
       const guestsWithStatus = guests.map(guest => ({
@@ -302,8 +354,11 @@ api.get('/events/:eventId/guests',
   }
 );
 
-api.delete('/guests/:guestId',
+api.delete('/events/:eventId/guests/:guestId',
   validator('param', (value, c) => {
+    if (!isValidId(value.eventId)) {
+      return c.text('Invalid event ID', 400);
+    }
     if (!isValidId(value.guestId)) {
       return c.text('Invalid guest ID', 400);
     }
@@ -314,18 +369,16 @@ api.delete('/guests/:guestId',
     
     try {
       const guestDO = getGuest(c.env, guestId);
-      const guestData = await guestDO.getGuest(guestId);
+      const guestData = await guestDO.get();
+      const eventId = await guestDO.getEventId();
       
       if (!guestData) {
         return c.json({ error: 'Guest not found' }, 404);
       }
-      
-      await guestDO.deleteGuest(guestId);
-      
-      // Also remove from Event DO's guest list
-      const eventDO = getEvent(c.env, guestData.eventId);
-      await eventDO.removeGuest(guestData.eventId, guestId);
-      
+
+      const eventDO = getEvent(c.env, eventId);
+      await eventDO.removeGuest(guestData.id);
+
       return c.json({ message: 'Guest deleted successfully' });
     } catch (error) {
       console.error(`Failed to delete guest ${guestId}:`, error);

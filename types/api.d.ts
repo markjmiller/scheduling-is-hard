@@ -443,10 +443,61 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["AvailabilityHeatmap"];
+                        "application/json": components["schemas"]["EventAvailabilityResponse"];
                     };
                 };
                 /** @description Event not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/guests/{guestId}/event": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get event details and availability for guest
+         * @description Retrieve event information (without eventId) and aggregated availability data for the event associated with this guest
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description 8-character alphanumeric guest identifier */
+                    guestId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Event details and availability data retrieved successfully */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["GuestEventResponse"];
+                    };
+                };
+                /** @description Guest not found or associated event not found */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -536,11 +587,6 @@ export interface components {
              * @example DEF456ZW
              */
             id: string;
-            /**
-             * @description Associated event identifier
-             * @example ABC123XY
-             */
-            eventId: string;
             /**
              * @description Guest name
              * @example John Doe
@@ -661,6 +707,75 @@ export interface components {
                     total?: number;
                 };
             };
+        };
+        GuestAvailabilityInfo: {
+            /**
+             * @description Guest identifier
+             * @example DEF456ZW
+             */
+            id: string;
+            /**
+             * @description Guest name
+             * @example John Doe
+             */
+            name: string;
+            /**
+             * @description List of available dates
+             * @example [
+             *       "2024-01-15",
+             *       "2024-01-16",
+             *       "2024-01-18"
+             *     ]
+             */
+            availability: string[];
+            /**
+             * @description Whether this guest is the event host
+             * @example false
+             */
+            isHost: boolean;
+            /**
+             * @description Whether this guest has submitted their availability
+             * @example true
+             */
+            hasResponded: boolean;
+        };
+        EventAvailabilityResponse: {
+            /**
+             * @description Total number of guests invited
+             * @example 5
+             */
+            totalGuests: number;
+            /**
+             * @description Number of guests who have submitted availability
+             * @example 3
+             */
+            respondedGuests: number;
+            /** @description List of all guests with their availability data */
+            guests: components["schemas"]["GuestAvailabilityInfo"][];
+        };
+        GuestEventResponse: {
+            /**
+             * @description Event name
+             * @example Team Planning Meeting
+             */
+            name: string;
+            /**
+             * @description Long-form event description
+             * @example Let's coordinate our availability for the quarterly planning session
+             */
+            description: string;
+            /**
+             * @description Total number of guests invited
+             * @example 5
+             */
+            totalGuests: number;
+            /**
+             * @description Number of guests who have submitted availability
+             * @example 3
+             */
+            respondedGuests: number;
+            /** @description List of all guests with their availability data */
+            guests: components["schemas"]["GuestAvailabilityInfo"][];
         };
         Error: {
             /**

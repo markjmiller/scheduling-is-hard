@@ -11,9 +11,11 @@ interface CalendarProps {
   onNotAvailableToggle?: () => void;
   showHostLegend?: boolean;
   hasSubmittedAvailability?: boolean;
+  hostAvailability?: string[];  // Host's available dates for guest view
+  isHostView?: boolean;         // Whether this is the host's own calendar
 }
 
-export default function Calendar({ selectedDates, availabilityHeatmap, onDateToggle, respondedGuests, totalGuests, isNotAvailable, onNotAvailableToggle, showHostLegend = true, hasSubmittedAvailability }: CalendarProps) {
+export default function Calendar({ selectedDates, availabilityHeatmap, onDateToggle, respondedGuests, totalGuests, isNotAvailable, onNotAvailableToggle, showHostLegend = true, hasSubmittedAvailability, hostAvailability = [], isHostView = false }: CalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   // Constants
@@ -63,13 +65,15 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
 
   // Availability calculation functions
   const getAvailabilityLevel = (date: string): number => {
-    return availabilityHeatmap.get(date) || 0;
+    const rawCount = availabilityHeatmap.get(date) || 0;
+    const totalResponders = respondedGuests || 1;
+    // Normalize raw guest count to 0-1 range for color calculation
+    return rawCount / totalResponders;
   };
 
   const getGuestCountForDate = (date: string): number => {
-    const level = availabilityHeatmap.get(date) || 0;
-    const actualResponders = respondedGuests || 1;
-    return Math.round(level * actualResponders);
+    // After API redesign, heatmap now contains raw guest counts instead of normalized 0-1 values
+    return availabilityHeatmap.get(date) || 0;
   };
 
   const getAvailabilityClass = (availabilityLevel: number): string => {
@@ -242,7 +246,9 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
             const availabilityClass = getAvailabilityClass(availabilityLevel);
             const isPast = isPastDate(date);
             const isToday = date === formatDate(new Date());
-            const isHostAvailable = selectedDates.includes(date);
+            // For guest views, check host availability from the provided hostAvailability array
+            // For host views, don't show host icons (since they're editing their own availability)
+            const isHostAvailable = isHostView ? false : hostAvailability.includes(date);
             const is100Percent = availabilityLevel === 1.0;
 
             return (
@@ -264,7 +270,7 @@ export default function Calendar({ selectedDates, availabilityHeatmap, onDateTog
                 
                 {/* Host availability and 100% indicators */}
                 <div className="date-indicators">
-                  {isHostAvailable && !isPast && !is100Percent && (
+                  {isHostAvailable && !isPast && !is100Percent && !isHostView && (
                     <i className="fas fa-user host-available-icon" title="Host is available"></i>
                   )}
                   {is100Percent && availabilityLevel > 0 && !isPast && (

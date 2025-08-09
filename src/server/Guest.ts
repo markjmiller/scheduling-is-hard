@@ -12,32 +12,52 @@ export class Guest extends DurableObject<Env> {
     super(ctx, env);
   }
 
-  async updateGuest(guestId: string, eventId: string, updates: Partial<GuestData>): Promise<GuestData> {
+  async init(guestId: string, eventId: string): Promise<void> {
+    await this.ctx.storage.put('id', guestId);
+    await this.ctx.storage.put('eventId', eventId);
+  }
+
+  private async getId(): Promise<string> {
+    const id = await this.ctx.storage.get<string>('id');
+    if (!id) {
+      throw new Error('ID not set');
+    }
+    return id;
+  }
+
+  public async getEventId(): Promise<string> {
+    const eventId = await this.ctx.storage.get<string>('eventId');
+    if (!eventId) {
+      throw new Error('Event ID not set');
+    }
+    return eventId;
+  }
+
+  async update(updates: Partial<GuestData>): Promise<GuestData> {
     const now = new Date().toISOString();
     
-    const existingGuest = await this.ctx.storage.get<GuestData>(`guest:${guestId}`);
+    const existingGuest = await this.ctx.storage.get<GuestData>('guestData');
     
     const guestData: GuestData = {
-      id: guestId,
-      eventId: eventId,
+      id: await this.getId(),
       name: updates.name || existingGuest?.name,
       availability: updates.availability !== undefined ? updates.availability : existingGuest?.availability,
       createdAt: existingGuest?.createdAt || now,
       updatedAt: now
     };
 
-    await this.ctx.storage.put(`guest:${guestId}`, guestData);
+    await this.ctx.storage.put('guestData', guestData);
     
     return guestData;
   }
 
-  async getGuest(guestId: string): Promise<GuestData | null> {
-    const guestData = await this.ctx.storage.get<GuestData>(`guest:${guestId}`);
+  async get(): Promise<GuestData | null> {
+    const guestData = await this.ctx.storage.get<GuestData>('guestData');
     return guestData || null;
   }
 
-  async updateAvailability(guestId: string, availability: string[]): Promise<GuestData> {
-    const existingGuest = await this.ctx.storage.get<GuestData>(`guest:${guestId}`);
+  async updateAvailability(availability: string[]): Promise<GuestData> {
+    const existingGuest = await this.ctx.storage.get<GuestData>('guestData');
     
     if (!existingGuest) {
       throw new Error('Guest not found');
@@ -49,13 +69,13 @@ export class Guest extends DurableObject<Env> {
       updatedAt: new Date().toISOString()
     };
 
-    await this.ctx.storage.put(`guest:${guestId}`, updatedGuest);
+    await this.ctx.storage.put('guestData', updatedGuest);
     
     return updatedGuest;
   }
 
-  async updateName(guestId: string, name: string): Promise<GuestData> {
-    const existingGuest = await this.ctx.storage.get<GuestData>(`guest:${guestId}`);
+  async updateName(name: string): Promise<GuestData> {
+    const existingGuest = await this.ctx.storage.get<GuestData>('guestData');
     
     if (!existingGuest) {
       throw new Error('Guest not found');
@@ -67,12 +87,8 @@ export class Guest extends DurableObject<Env> {
       updatedAt: new Date().toISOString()
     };
 
-    await this.ctx.storage.put(`guest:${guestId}`, updatedGuest);
+    await this.ctx.storage.put('guestData', updatedGuest);
     
     return updatedGuest;
-  }
-
-  async deleteGuest(guestId: string): Promise<void> {
-    await this.ctx.storage.delete(`guest:${guestId}`);
   }
 }

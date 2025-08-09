@@ -11,7 +11,6 @@ type Guest = components["schemas"]["Guest"];
 
 export default function GuestPage() {
   const { guestId } = useParams<{ guestId: string }>();
-  const [eventId, setEventId] = useState<string | null>(null);
   const [event, setEvent] = useState<Event | null>(null);
   const [, setGuest] = useState<Guest | null>(null);
   const [guestName, setGuestName] = useState('');
@@ -23,6 +22,29 @@ export default function GuestPage() {
   const [isNotAvailable, setIsNotAvailable] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hostAvailability, setHostAvailability] = useState<string[]>([]);
+
+  // Helper function to convert guest data to heatmap
+  const createHeatmapFromGuests = (guests: any[]) => {
+    const heatmap = new Map<string, number>();
+    
+    guests.forEach(guest => {
+      if (guest.hasResponded && guest.availability) {
+        guest.availability.forEach((date: string) => {
+          const currentCount = heatmap.get(date) || 0;
+          heatmap.set(date, currentCount + 1);
+        });
+      }
+    });
+    
+    return heatmap;
+  };
+
+  // Helper function to extract host availability
+  const extractHostAvailability = (guests: any[]) => {
+    const host = guests.find(guest => guest.isHost);
+    return host?.availability || [];
+  };
 
   useEffect(() => {
     loadGuestData();
@@ -37,22 +59,33 @@ export default function GuestPage() {
       clearInterval(pollIntervalRef.current);
     }
 
-    if (!eventId) return;
-
     const pollAvailability = async () => {
       try {
         // Poll event details and mutual calendar updates
-        const [eventData, heatmapData] = await Promise.all([
-          ApiService.getEvent(eventId),
-          ApiService.getEventAvailability(eventId)
-        ]);
+        const eventData = await ApiService.getEventForGuest(guestId!);
         
-        // Update event information if it has changed
-        setEvent(eventData);
+        if (!eventData) {
+          setError('EVENT_NOT_FOUND');
+          return;
+        }
         
-        setAvailabilityHeatmap(new Map(Object.entries(heatmapData.heatmap)));
-        setTotalGuests(heatmapData.totalGuests);
-        setRespondedGuests(heatmapData.respondedGuests);
+        // Update event information
+        setEvent({
+          id: '', // We don't have eventId in the response, which is intentional for security
+          name: eventData.name,
+          description: eventData.description,
+          hostGuestId: '',
+          createdAt: '',
+          updatedAt: ''
+        });
+        
+        // Update availability heatmap from guest data
+        setAvailabilityHeatmap(createHeatmapFromGuests(eventData.guests));
+        setTotalGuests(eventData.totalGuests);
+        setRespondedGuests(eventData.respondedGuests);
+        
+        // Extract and set host availability
+        setHostAvailability(extractHostAvailability(eventData.guests));
         
         // Poll user's own availability calendar to sync across sessions
         if (guestId) {
@@ -69,11 +102,11 @@ export default function GuestPage() {
 
     // Start polling for real-time mutual calendar updates
     pollIntervalRef.current = setInterval(pollAvailability, POLLING_INTERVALS.GUEST_PAGE.EVENT_AND_AVAILABILITY);
-  }, [eventId, guestId]);
+  }, [guestId]);
 
   // Poll for real-time availability updates
   useEffect(() => {
-    if (!eventId || !guestId) return;
+    if (!guestId) return;
     
     resetPollInterval();
 
@@ -82,7 +115,7 @@ export default function GuestPage() {
         clearInterval(pollIntervalRef.current);
       }
     };
-  }, [eventId, guestId, resetPollInterval]);
+  }, [guestId, resetPollInterval]);
 
   const loadGuestData = async () => {
     if (!guestId) return;
@@ -90,15 +123,12 @@ export default function GuestPage() {
     try {
       setLoading(true);
       
-      // First, get guest data which contains the eventId
       const guestData = await ApiService.getGuest(guestId);
-      if (!guestData || !guestData.eventId) {
+      if (!guestData) {
         setError('GUEST_NOT_FOUND');
         return;
       }
       
-      // Store eventId from guest data
-      setEventId(guestData.eventId);
       setGuest(guestData);
       setGuestName(guestData.name || '');
       setIsEditingName(!guestData.name); // Edit name if not provided
@@ -108,16 +138,31 @@ export default function GuestPage() {
         setSelectedDates(guestData.availability);
       }
 
-      // Now load event data and heatmap using the eventId from guest data
-      const [eventData, heatmapData] = await Promise.all([
-        ApiService.getEvent(guestData.eventId),
-        ApiService.getEventAvailability(guestData.eventId)
-      ]);
+      // Now load event and availability data
+      const eventData = await ApiService.getEventForGuest(guestId);
       
-      setEvent(eventData);
-      setAvailabilityHeatmap(new Map(Object.entries(heatmapData.heatmap)));
-      setTotalGuests(heatmapData.totalGuests);
-      setRespondedGuests(heatmapData.respondedGuests);
+      if (!eventData) {
+        setError('EVENT_NOT_FOUND');
+        return;
+      }
+      
+      // Set event information
+      setEvent({
+        id: '', // We don't have eventId in the response, which is intentional for security
+        name: eventData.name,
+        description: eventData.description,
+        hostGuestId: '',
+        createdAt: '',
+        updatedAt: ''
+      });
+      
+      // Set availability heatmap from guest data
+      setAvailabilityHeatmap(createHeatmapFromGuests(eventData.guests));
+      setTotalGuests(eventData.totalGuests);
+      setRespondedGuests(eventData.respondedGuests);
+      
+      // Extract and set host availability
+      setHostAvailability(extractHostAvailability(eventData.guests));
 
     } catch (err) {
       if (err instanceof Error && (err.message.includes('404') || err.message.includes('Not Found'))) {
@@ -133,7 +178,7 @@ export default function GuestPage() {
 
   const handleNameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!guestName.trim() || !eventId || !guestId) return;
+    if (!guestName.trim() || !guestId) return;
 
     try {
       await ApiService.updateGuestName(guestId, guestName.trim());
@@ -166,7 +211,7 @@ export default function GuestPage() {
   };
 
   const handleDateToggle = async (date: string) => {
-    if (!eventId || !guestId) return;
+    if (!guestId) return;
 
     const newSelectedDates = selectedDates.includes(date)
       ? selectedDates.filter(d => d !== date)
@@ -181,9 +226,12 @@ export default function GuestPage() {
     try {
       await ApiService.updateGuestAvailability(guestId, newSelectedDates);
       // Refresh heatmap data after update
-      const heatmapData = await ApiService.getEventAvailability(eventId);
-      setAvailabilityHeatmap(new Map(Object.entries(heatmapData.heatmap)));
+      const heatmapData = await ApiService.getEventForGuest(guestId);
+      setAvailabilityHeatmap(createHeatmapFromGuests(heatmapData.guests));
       setRespondedGuests(heatmapData.respondedGuests);
+      
+      // Update host availability
+      setHostAvailability(extractHostAvailability(heatmapData.guests));
     } catch (err) {
       console.error('Error updating availability:', err);
       // Revert the change on error
@@ -293,6 +341,8 @@ export default function GuestPage() {
             isNotAvailable={isNotAvailable}
             onNotAvailableToggle={handleNotAvailable}
             hasSubmittedAvailability={selectedDates.length > 0 || isNotAvailable}
+            hostAvailability={hostAvailability}
+            isHostView={false}
           />
           
 

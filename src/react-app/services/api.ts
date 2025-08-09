@@ -11,10 +11,27 @@ interface Guest extends BaseGuest {
   availability?: string[];
 }
 
+interface GuestAvailabilityInfo {
+  id: string;
+  name: string;
+  availability: string[];
+  isHost: boolean;
+  hasResponded: boolean;
+}
+
 interface EventAvailability {
-  heatmap: Record<string, number>;
   totalGuests: number;
   respondedGuests: number;
+  guests: GuestAvailabilityInfo[];
+}
+
+// The new response from /guests/{guestId}/event with guest-level data
+interface EventForGuest {
+  name: string;
+  description: string;
+  totalGuests: number;
+  respondedGuests: number;
+  guests: GuestAvailabilityInfo[];
 }
 
 // API base URL
@@ -91,6 +108,17 @@ export class ApiService {
     
     if (!response.ok) {
       throw new Error(`Failed to get event availability: ${response.statusText}`);
+    }
+    
+    return response.json();
+  }
+
+  // Get event availability heatmap
+  static async getEventForGuest(guestId: string): Promise<EventForGuest> {
+    const response = await fetch(`${API_BASE}/guests/${guestId}/event`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to get event for guest: ${response.statusText}`);
     }
     
     return response.json();

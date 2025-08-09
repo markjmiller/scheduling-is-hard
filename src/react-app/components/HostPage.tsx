@@ -52,6 +52,22 @@ export default function HostPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Helper function to convert guest data to heatmap
+  const createHeatmapFromGuests = (guests: any[]) => {
+    const heatmap = new Map<string, number>();
+    
+    guests.forEach(guest => {
+      if (guest.hasResponded && guest.availability) {
+        guest.availability.forEach((date: string) => {
+          const currentCount = heatmap.get(date) || 0;
+          heatmap.set(date, currentCount + 1);
+        });
+      }
+    });
+    
+    return heatmap;
+  };
+
   useEffect(() => {
     loadEventData();
   }, [eventId]);
@@ -75,7 +91,7 @@ export default function HostPage() {
           ApiService.getEventGuests(eventId)
         ]);
         
-        setAvailabilityHeatmap(new Map(Object.entries(heatmapData.heatmap)));
+        setAvailabilityHeatmap(createHeatmapFromGuests(heatmapData.guests));
         setTotalGuests(heatmapData.totalGuests);
         setRespondedGuests(heatmapData.respondedGuests);
         
@@ -142,7 +158,7 @@ export default function HostPage() {
         ApiService.getEventGuests(eventId)
       ]);
       
-      setAvailabilityHeatmap(new Map(Object.entries(heatmapData.heatmap)));
+      setAvailabilityHeatmap(createHeatmapFromGuests(heatmapData.guests));
       setRespondedGuests(heatmapData.respondedGuests);
       setTotalGuests(heatmapData.totalGuests);
       
@@ -216,7 +232,6 @@ export default function HostPage() {
       // Add to guests list
       const newGuest: ExtendedGuest = {
         id: guestLink.guestId,
-        eventId: eventId,
         name: newGuestName.trim() || undefined,
         hasResponded: false,
         createdAt: new Date().toISOString(),
@@ -259,7 +274,7 @@ export default function HostPage() {
       
       // Refresh heatmap data
       const heatmapData = await ApiService.getEventAvailability(eventId);
-      setAvailabilityHeatmap(new Map(Object.entries(heatmapData.heatmap)));
+      setAvailabilityHeatmap(createHeatmapFromGuests(heatmapData.guests));
       setRespondedGuests(heatmapData.respondedGuests);
     } catch (error) {
       console.error('Error updating host availability:', error);
@@ -344,7 +359,7 @@ export default function HostPage() {
       // Refresh availability heatmap since guest was removed
       if (eventId) {
         const heatmapData = await ApiService.getEventAvailability(eventId);
-        setAvailabilityHeatmap(new Map(Object.entries(heatmapData.heatmap)));
+        setAvailabilityHeatmap(createHeatmapFromGuests(heatmapData.guests));
         setTotalGuests(heatmapData.totalGuests);
         setRespondedGuests(heatmapData.respondedGuests);
       }
@@ -704,6 +719,7 @@ export default function HostPage() {
           onNotAvailableToggle={handleHostNotAvailable}
           showHostLegend={false}
           hasSubmittedAvailability={hostSelectedDates.length > 0 || isHostNotAvailable}
+          isHostView={true}
         />
       </section>
     </div>
