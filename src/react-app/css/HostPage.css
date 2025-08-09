@@ -625,6 +625,7 @@ tbody tr:last-child td {
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  justify-content: center;
 }
 
 .copy-link-btn:hover {
@@ -759,22 +760,82 @@ tbody tr:last-child td {
 
   thead th,
   tbody td {
-    padding: 0.5rem 0.25rem;
-    font-size: 0.75rem;
+    padding: 0.75rem 0.5rem;
+    font-size: 0.8rem;
     word-wrap: break-word;
     overflow-wrap: break-word;
     hyphens: auto;
+    line-height: 1.4;
+  }
+
+  /* Make buttons more touch-friendly on mobile */
+  .copy-link-btn,
+  .open-guest-page-btn,
+  .edit-guest-btn,
+  .delete-guest-btn {
+    min-height: 32px;
+    min-width: 32px;
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  /* Stack guest link actions vertically for better mobile UX */
+  .guest-link-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: stretch;
+  }
+
+  .guest-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: center;
+  }
+
+  /* Center host guest ID on mobile */
+  .host-guest-id {
+    justify-content: center;
+  }
+
+  /* Enhanced mobile status badges with icons */
+  .status {
+    display: flex;
+    gap: 0.25rem;
+    font-size: 0;
+  }
+
+  .status.responded {
+    background: none;
+  }
+
+  .status.responded::before {
+    content: "✓";
+    font-weight: bold;
+    font-size: 0.9rem;
+    display: flex;
+  }
+
+  .status.pending {
+    background: none;;
+  }
+
+  .status.pending::before {
+    content: "⏳";
+    font-size: 0.8rem;
+    display: flex;
   }
 
   /* Mobile table column widths */
-  thead th:nth-child(1) { width: 25%; } /* Name */
+  thead th:nth-child(1) { width: 30%; } /* Name - wider */
   thead th:nth-child(2) { width: 20%; } /* Status */
-  thead th:nth-child(3) { width: 35%; } /* Guest Link */
+  thead th:nth-child(3) { width: 30%; } /* Guest Link - wider */
   thead th:nth-child(4) { width: 20%; } /* Actions */
 
-  tbody td:nth-child(1) { width: 25%; }
+  tbody td:nth-child(1) { width: 30%; }
   tbody td:nth-child(2) { width: 20%; }
-  tbody td:nth-child(3) { width: 35%; }
+  tbody td:nth-child(3) { width: 30%; }
   tbody td:nth-child(4) { width: 20%; }
 }
 
@@ -798,5 +859,26 @@ tbody tr:last-child td {
 
   .empty-state {
     padding: 2rem 1rem;
+  }
+
+  /* Extra small mobile: more generous spacing */
+  thead th,
+  tbody td {
+    padding: 1rem 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  /* Hide text in link buttons, show icons only */
+  .copy-link-btn {
+    font-size: 0;
+  }
+
+  .copy-link-btn i {
+    font-size: 0.875rem;
+  }
+
+  /* Adjust table row height for better touch targets */
+  tbody tr {
+    min-height: 80px;
   }
 }
