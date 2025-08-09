@@ -16,8 +16,10 @@ servers:
 paths:
   /events:
     post:
+      operationId: createEvent
       summary: Create a new event
       description: Create a new scheduling event with name, description, and expected attendee count
+      security: []
       requestBody:
         required: true
         content:
@@ -40,8 +42,10 @@ paths:
 
   /events/{eventId}:
     get:
+      operationId: getEvent
       summary: Get event details
       description: Retrieve details of a specific event
+      security: []
       parameters:
         - name: eventId
           in: path
@@ -63,10 +67,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-    
+
     put:
+      operationId: updateEvent
       summary: Update event details
       description: Update name, description, or expected attendee count for an event
+      security: []
       parameters:
         - name: eventId
           in: path
@@ -103,8 +109,10 @@ paths:
 
   /events/{eventId}/guests:
     post:
+      operationId: generateGuestLink
       summary: Generate unique guest link
       description: Create a new unique guest identifier and return the guest URL
+      security: []
       parameters:
         - name: eventId
           in: path
@@ -133,8 +141,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
     get:
+      operationId: getEventGuests
       summary: Get all guests for an event
       description: Retrieve list of all guests invited to an event with their response status
+      security: []
       parameters:
         - name: eventId
           in: path
@@ -151,13 +161,13 @@ paths:
               schema:
                 type: array
                 items:
-                  allOf:
-                    - $ref: '#/components/schemas/Guest'
-                    - type: object
-                      properties:
-                        hasResponded:
-                          type: boolean
-                          description: Whether this guest has submitted their availability
+                  $ref: '#/components/schemas/Guest'
+        404:
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         500:
           description: Failed to get event guests
           content:
@@ -167,8 +177,10 @@ paths:
 
   /events/{eventId}/guests/{guestId}:
     delete:
+      operationId: deleteGuest
       summary: Delete a guest
       description: Remove a guest and their availability data from the event
+      security: []
       parameters:
         - name: eventId
           in: path
@@ -188,13 +200,16 @@ paths:
         200:
           description: Guest deleted successfully
           content:
+            text/plain:
+              schema:
+                type: string
+                example: "Guest deleted successfully"
+        404:
+          description: Guest not found
+          content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Guest deleted successfully"
+                $ref: '#/components/schemas/Error'
         500:
           description: Failed to delete guest
           content:
@@ -204,8 +219,10 @@ paths:
 
   /events/{eventId}/availability:
     get:
+      operationId: getEventAvailability
       summary: Get aggregated availability for heatmap
       description: Retrieve all guest availability data for displaying the calendar heatmap
+      security: []
       parameters:
         - name: eventId
           in: path
@@ -230,8 +247,10 @@ paths:
 
   /guests/{guestId}:
     get:
+      operationId: getGuest
       summary: Get guest information
       description: Retrieve guest details by guest ID
+      security: []
       parameters:
         - name: guestId
           in: path
@@ -262,8 +281,10 @@ paths:
 
   /guests/{guestId}/name:
     put:
+      operationId: updateGuestName
       summary: Update guest name
       description: Update the name of a guest
+      security: []
       parameters:
         - name: guestId
           in: path
@@ -314,8 +335,10 @@ paths:
 
   /guests/{guestId}/availability:
     put:
+      operationId: updateGuestAvailability
       summary: Update guest availability
       description: Update the availability dates for a guest
+      security: []
       parameters:
         - name: guestId
           in: path
@@ -362,8 +385,10 @@ paths:
 
   /guests/{guestId}/event:
     get:
+      operationId: getGuestEvent
       summary: Get event details and availability for guest
       description: Retrieve event information (without eventId) and aggregated availability data for the event associated with this guest
+      security: []
       parameters:
         - name: guestId
           in: path
@@ -426,7 +451,6 @@ components:
           type: string
           format: date-time
           description: Event last update timestamp
-    
     CreateEventRequest:
       type: object
       required:
@@ -489,7 +513,6 @@ components:
           type: string
           format: date-time
           description: Guest last update timestamp
-    
     GuestLink:
       type: object
       required:
@@ -507,17 +530,6 @@ components:
           description: Unique URL for guest to submit availability
           example: "/event/ABC123XY/guest/DEF456ZW"
     
-    GuestEventInfo:
-      type: object
-      required:
-        - guest
-        - event
-      properties:
-        guest:
-          $ref: '#/components/schemas/Guest'
-        event:
-          $ref: '#/components/schemas/Event'
-    
     CreateGuestRequest:
       type: object
       properties:
@@ -526,102 +538,6 @@ components:
           maxLength: 100
           description: Optional guest name to pre-populate
           example: "Human Name"
-    
-    UpdateGuestRequest:
-      type: object
-      properties:
-        name:
-          type: string
-          maxLength: 100
-          description: Guest name
-          example: "Human Name"
-    
-    AvailabilitySubmission:
-      type: object
-      required:
-        - dates
-      properties:
-        dates:
-          type: array
-          items:
-            type: string
-            format: date
-            description: Available date in YYYY-MM-DD format
-          description: Array of dates the guest is available
-          example: ["2024-01-15", "2024-01-16", "2024-01-18"]
-    
-    AvailabilityResponse:
-      type: object
-      required:
-        - guestId
-        - dates
-        - updatedAt
-      properties:
-        guestId:
-          type: string
-          pattern: '^[A-Za-z0-9]{8}$'
-          description: Guest identifier
-          example: "DEF456ZW"
-        dates:
-          type: array
-          items:
-            type: string
-            format: date
-          description: Updated available dates
-          example: ["2024-01-15", "2024-01-16", "2024-01-18"]
-        updatedAt:
-          type: string
-          format: date-time
-          description: Availability last update timestamp
-    
-    AvailabilityHeatmap:
-      type: object
-      required:
-        - eventId
-        - totalGuests
-        - respondedGuests
-        - availability
-      properties:
-        eventId:
-          type: string
-          pattern: '^[A-Za-z0-9]{8}$'
-          description: Event identifier
-          example: "ABC123XY"
-        totalGuests:
-          type: integer
-          minimum: 0
-          description: Total number of guests invited
-          example: 5
-        respondedGuests:
-          type: integer
-          minimum: 0
-          description: Number of guests who have submitted availability
-          example: 3
-        availability:
-          type: object
-          additionalProperties:
-            type: object
-            properties:
-              available:
-                type: integer
-                minimum: 0
-                description: Number of guests available on this date
-              total:
-                type: integer
-                minimum: 0
-                description: Total guests who have responded
-          description: Date-keyed availability counts for heatmap
-          example:
-            "2024-01-15":
-              available: 3
-              total: 3
-            "2024-01-16":
-              available: 2
-              total: 3
-            "2024-01-17":
-              available: 1
-              total: 3
-    
     GuestAvailabilityInfo:
       type: object
       required:
