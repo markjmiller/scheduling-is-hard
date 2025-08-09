@@ -1,0 +1,264 @@
+.guest-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+  background: #f8f9fa;
+  min-height: 100vh;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif;
+}
+
+/* Loading and Error States */
+.loading,
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  color: #4a5568;
+  text-align: center;
+}
+
+.loading i,
+.error i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.8;
+}
+
+.error h2 {
+  margin-bottom: 0.5rem;
+  color: #2d3748;
+}
+
+/* Header */
+.guest-header {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.event-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.event-info h1 {
+  margin: 0 0 0.5rem 0;
+  font-size: 2rem;
+  color: #2d3748;
+  font-weight: 700;
+}
+
+.event-info p {
+  margin: 0 0 1rem 0;
+  color: #4a5568;
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
+
+/* Name Form */
+.name-form {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.name-input-group {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.name-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+  color: #1f2937;
+  transition: border-color 0.2s;
+}
+
+.name-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.name-submit-btn {
+  padding: 0.75rem 1rem;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  min-width: 48px;
+}
+
+.name-submit-btn:hover {
+  background: #5a67d8;
+}
+
+.name-help {
+  margin: 0;
+  color: #718096;
+  font-size: 0.875rem;
+}
+
+/* Guest Info */
+.guest-info {
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.guest-name {
+  margin: 0;
+  color: #2d3748;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.edit-name-btn {
+  background: none;
+  border: none;
+  color: #718096;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: color 0.2s;
+}
+
+.edit-name-btn:hover {
+  color: #4a5568;
+}
+
+/* Main Content */
+.guest-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.availability-section {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.availability-section h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.calendar-instructions {
+  margin: 0 0 1.5rem 0;
+  color: #718096;
+  line-height: 1.5;
+}
+
+/* Not Available Section */
+.not-available-section {
+  text-align: center;
+}
+
+.not-available-btn {
+  background: #f7fafc;
+  color: #4a5568;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.not-available-btn:hover {
+  background: #edf2f7;
+  border-color: #cbd5e0;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.not-available-btn.active {
+  background: #667eea;
+  color: white;
+  border-color: #5a67d8;
+}
+
+.not-available-btn.active:hover {
+  background: #5a67d8;
+  border-color: #4c51bf;
+}
+
+.not-available-btn:disabled {
+  background: #667eea;
+  color: white;
+  border-color: #5a67d8;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.not-available-btn:disabled:hover {
+  background: #667eea;
+  border-color: #5a67d8;
+  transform: none;
+  box-shadow: none;
+}
+
+.not-available-message {
+  background: #f0fff4;
+  color: #276749;
+  border: 1px solid #9ae6b4;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0.5rem auto 0 auto;
+  max-width: 400px;
+}
+
+.not-available-message i {
+  color: #38a169;
+}
+
+/* Responsive Design */
+@media (min-width: 768px) {
+  .guest-page {
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .guest-header {
+    padding: 2rem;
+  }
+
+  .availability-section {
+    padding: 2rem;
+  }
+
+  .name-input-group {
+    max-width: 400px;
+  }
+}

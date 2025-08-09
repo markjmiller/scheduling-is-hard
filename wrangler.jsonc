@@ -7,20 +7,24 @@
   "observability": {
     "enabled": true
   },
-  // "migrations": [
-  //   {
-  //     "new_sqlite_classes": [],
-  //     "tag": "v1"
-  //   }
-  // ],
-  // "durable_objects": {
-  //   "bindings": [
-  //     {
-  //       "name": "MY_DO",
-  //       "class_name": "MyDo"
-  //     }
-  //   ]
-  // },
+  "migrations": [
+    {
+      "new_sqlite_classes": ["Event", "Guest"],
+      "tag": "v1"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "EVENT",
+        "class_name": "Event"
+      },
+      {
+        "name": "GUEST",
+        "class_name": "Guest"
+      }
+    ]
+  },
   "triggers": {
     "crons": []
   },

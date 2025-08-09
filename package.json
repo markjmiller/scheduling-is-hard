@@ -16,10 +16,10 @@
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.0.0",
-    "cloudflare": "^4.5.0",
     "hono": "^4.7.8",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-router-dom": "^7.8.0",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
@@ -28,6 +28,7 @@
     "@types/node": "^24.1.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
+    "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react": "^4.7.0",
     "api2html": "^0.4.0",
     "globals": "^16.3.0",

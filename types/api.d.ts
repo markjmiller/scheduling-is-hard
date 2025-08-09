@@ -4,38 +4,186 @@
  */
 
 export interface paths {
-    "/example": {
+    "/events": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Example response */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
+        get?: never;
+        put?: never;
+        /**
+         * Create a new event
+         * @description Create a new scheduling event with name, description, and expected attendee count
+         */
+        post: operations["createEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/events/{eventId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
+        /**
+         * Get event details
+         * @description Retrieve details of a specific event
+         */
+        get: operations["getEvent"];
+        /**
+         * Update event details
+         * @description Update name, description, or expected attendee count for an event
+         */
+        put: operations["updateEvent"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/events/{eventId}/guests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get all guests for an event
+         * @description Retrieve list of all guests invited to an event with their response status
+         */
+        get: operations["getEventGuests"];
+        put?: never;
+        /**
+         * Generate unique guest link
+         * @description Create a new unique guest identifier and return the guest URL
+         */
+        post: operations["generateGuestLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/events/{eventId}/guests/{guestId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a guest
+         * @description Remove a guest and their availability data from the event
+         */
+        delete: operations["deleteGuest"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/events/{eventId}/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get aggregated availability for heatmap
+         * @description Retrieve all guest availability data for displaying the calendar heatmap
+         */
+        get: operations["getEventAvailability"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/guests/{guestId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get guest information
+         * @description Retrieve guest details by guest ID
+         */
+        get: operations["getGuest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/guests/{guestId}/name": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update guest name
+         * @description Update the name of a guest
+         */
+        put: operations["updateGuestName"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/guests/{guestId}/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update guest availability
+         * @description Update the availability dates for a guest
+         */
+        put: operations["updateGuestAvailability"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/guests/{guestId}/event": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get event details and availability for guest
+         * @description Retrieve event information (without eventId) and aggregated availability data for the event associated with this guest
+         */
+        get: operations["getGuestEvent"];
         put?: never;
         post?: never;
         delete?: never;
@@ -48,8 +196,193 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        ExampleResponse: {
-            message?: string;
+        Event: {
+            /**
+             * @description 8-character alphanumeric event identifier
+             * @example ABC123XY
+             */
+            id: string;
+            /**
+             * @description Event name
+             * @example Fun Activity
+             */
+            name: string;
+            /**
+             * @description Long-form event description
+             * @example Let's have fun!
+             */
+            description: string;
+            /**
+             * @description Host's guest ID for availability participation
+             * @example HOST123X
+             */
+            hostGuestId: string;
+            /**
+             * Format: date-time
+             * @description Event creation timestamp
+             */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description Event last update timestamp
+             */
+            updatedAt: string;
+        };
+        CreateEventRequest: {
+            /**
+             * @description Event name
+             * @example Fun Activity
+             */
+            name: string;
+            /**
+             * @description Long-form event description
+             * @example Let's have fun!
+             */
+            description: string;
+            /**
+             * @description Name of the event host
+             * @example Human Name
+             */
+            hostName: string;
+        };
+        UpdateEventRequest: {
+            /**
+             * @description Event name
+             * @example Fun Activity - Updated
+             */
+            name?: string;
+            /**
+             * @description Long-form event description
+             * @example Updated description for the quarterly planning session
+             */
+            description?: string;
+        };
+        Guest: {
+            /**
+             * @description 8-character alphanumeric guest identifier
+             * @example DEF456ZW
+             */
+            id: string;
+            /**
+             * @description Guest name
+             * @example Human Name
+             */
+            name?: string;
+            /**
+             * Format: date-time
+             * @description Guest creation timestamp
+             */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description Guest last update timestamp
+             */
+            updatedAt: string;
+        };
+        GuestLink: {
+            /**
+             * @description 8-character alphanumeric guest identifier
+             * @example DEF456ZW
+             */
+            guestId: string;
+            /**
+             * Format: uri
+             * @description Unique URL for guest to submit availability
+             * @example /event/ABC123XY/guest/DEF456ZW
+             */
+            url: string;
+        };
+        CreateGuestRequest: {
+            /**
+             * @description Optional guest name to pre-populate
+             * @example Human Name
+             */
+            name?: string;
+        };
+        GuestAvailabilityInfo: {
+            /**
+             * @description Guest identifier
+             * @example DEF456ZW
+             */
+            id: string;
+            /**
+             * @description Guest name
+             * @example Human Name
+             */
+            name: string;
+            /**
+             * @description List of available dates
+             * @example [
+             *       "2024-01-15",
+             *       "2024-01-16",
+             *       "2024-01-18"
+             *     ]
+             */
+            availability: string[];
+            /**
+             * @description Whether this guest is the event host
+             * @example false
+             */
+            isHost: boolean;
+            /**
+             * @description Whether this guest has submitted their availability
+             * @example true
+             */
+            hasResponded: boolean;
+        };
+        EventAvailabilityResponse: {
+            /**
+             * @description Total number of guests invited
+             * @example 5
+             */
+            totalGuests: number;
+            /**
+             * @description Number of guests who have submitted availability
+             * @example 3
+             */
+            respondedGuests: number;
+            /** @description List of all guests with their availability data */
+            guests: components["schemas"]["GuestAvailabilityInfo"][];
+        };
+        GuestEventResponse: {
+            /**
+             * @description Event name
+             * @example Fun Activity
+             */
+            name: string;
+            /**
+             * @description Long-form event description
+             * @example Let's have fun!
+             */
+            description: string;
+            /**
+             * @description Total number of guests invited
+             * @example 5
+             */
+            totalGuests: number;
+            /**
+             * @description Number of guests who have submitted availability
+             * @example 3
+             */
+            respondedGuests: number;
+            /** @description List of all guests with their availability data */
+            guests: components["schemas"]["GuestAvailabilityInfo"][];
+        };
+        Error: {
+            /**
+             * @description Error type
+             * @example NOT_FOUND
+             */
+            error: string;
+            /**
+             * @description Human-readable error message
+             * @example Event not found
+             */
+            message: string;
+            /** @description Additional error details */
+            details?: {
+                [key: string]: unknown;
+            };
         };
     };
     responses: never;
@@ -59,4 +392,455 @@ export interface components {
     pathItems: never;
 }
 export type $defs = Record<string, never>;
-export type operations = Record<string, never>;
+export interface operations {
+    createEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateEventRequest"];
+            };
+        };
+        responses: {
+            /** @description Event created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Event"];
+                };
+            };
+            /** @description Invalid request data */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 8-character alphanumeric event identifier */
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Event details retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Event"];
+                };
+            };
+            /** @description Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    updateEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 8-character alphanumeric event identifier */
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateEventRequest"];
+            };
+        };
+        responses: {
+            /** @description Event updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Event"];
+                };
+            };
+            /** @description Invalid request data */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getEventGuests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 8-character event identifier (e + 7 alphanumeric chars) */
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Event guests retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Guest"][];
+                };
+            };
+            /** @description Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Failed to get event guests */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    generateGuestLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 8-character event identifier (e + 7 alphanumeric chars) */
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CreateGuestRequest"];
+            };
+        };
+        responses: {
+            /** @description Guest link generated successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestLink"];
+                };
+            };
+            /** @description Failed to generate guest link */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    deleteGuest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 8-character event identifier (e + 7 alphanumeric chars) */
+                eventId: string;
+                /** @description 8-character guest identifier (g + 7 alphanumeric chars) */
+                guestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Guest deleted successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description Guest not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Failed to delete guest */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getEventAvailability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 8-character alphanumeric event identifier */
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Availability data retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventAvailabilityResponse"];
+                };
+            };
+            /** @description Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getGuest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 8-character guest identifier (g + 7 alphanumeric chars) */
+                guestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Guest details retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Guest"];
+                };
+            };
+            /** @description Guest not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Failed to get guest data */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    updateGuestName: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 8-character guest identifier (g + 7 alphanumeric chars) */
+                guestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * @description Guest name
+                     * @example Human Name
+                     */
+                    name: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Guest name updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Guest"];
+                };
+            };
+            /** @description Name is required */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Guest not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Failed to update guest name */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    updateGuestAvailability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 8-character guest identifier (g + 7 alphanumeric chars) */
+                guestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * @description Array of available dates in YYYY-MM-DD format
+                     * @example [
+                     *       "2024-01-15",
+                     *       "2024-01-16",
+                     *       "2024-01-18"
+                     *     ]
+                     */
+                    availability: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Availability updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Guest"];
+                };
+            };
+            /** @description Availability must be an array or failed to update availability */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Guest not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getGuestEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 8-character guest identifier (g + 7 alphanumeric chars) */
+                guestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Event details and availability data retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestEventResponse"];
+                };
+            };
+            /** @description Guest not found or associated event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+}

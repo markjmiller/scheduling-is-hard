@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Scheduling Is Hard API
-  description: API for app for mutually finding availability with any number of people.
+  description: API for mutually finding availability with any number of people.
   version: 1.0.0
   license:
     name: Apache 2.0
@@ -13,26 +13,639 @@ servers:
       cloudflare-workers-subdomain:
         default: replace-me
 
-security:
-  - BasicAuth: []
-
 paths:
-  /example:
+  /events:
+    post:
+      operationId: createEvent
+      summary: Create a new event
+      description: Create a new scheduling event with name, description, and expected attendee count
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+      responses:
+        201:
+          description: Event created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        400:
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /events/{eventId}:
     get:
+      operationId: getEvent
+      summary: Get event details
+      description: Retrieve details of a specific event
+      security: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          description: 8-character alphanumeric event identifier
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9]{8}$'
       responses:
         200:
-          description: Example response
+          description: Event details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
         404:
-          description: Not found
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      operationId: updateEvent
+      summary: Update event details
+      description: Update name, description, or expected attendee count for an event
+      security: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          description: 8-character alphanumeric event identifier
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9]{8}$'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventRequest'
+      responses:
+        200:
+          description: Event updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        400:
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /events/{eventId}/guests:
+    post:
+      operationId: generateGuestLink
+      summary: Generate unique guest link
+      description: Create a new unique guest identifier and return the guest URL
+      security: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          description: 8-character event identifier (e + 7 alphanumeric chars)
+          schema:
+            type: string
+            pattern: '^e[A-Za-z0-9]{7}$'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGuestRequest'
+      responses:
+        201:
+          description: Guest link generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuestLink'
+        400:
+          description: Failed to generate guest link
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      operationId: getEventGuests
+      summary: Get all guests for an event
+      description: Retrieve list of all guests invited to an event with their response status
+      security: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          description: 8-character event identifier (e + 7 alphanumeric chars)
+          schema:
+            type: string
+            pattern: '^e[A-Za-z0-9]{7}$'
+      responses:
+        200:
+          description: Event guests retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Guest'
+        404:
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Failed to get event guests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /events/{eventId}/guests/{guestId}:
+    delete:
+      operationId: deleteGuest
+      summary: Delete a guest
+      description: Remove a guest and their availability data from the event
+      security: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          description: 8-character event identifier (e + 7 alphanumeric chars)
+          schema:
+            type: string
+            pattern: '^e[A-Za-z0-9]{7}$'
+        - name: guestId
+          in: path
+          required: true
+          description: 8-character guest identifier (g + 7 alphanumeric chars)
+          schema:
+            type: string
+            pattern: '^g[A-Za-z0-9]{7}$'
+      responses:
+        200:
+          description: Guest deleted successfully
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Guest deleted successfully"
+        404:
+          description: Guest not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Failed to delete guest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /events/{eventId}/availability:
+    get:
+      operationId: getEventAvailability
+      summary: Get aggregated availability for heatmap
+      description: Retrieve all guest availability data for displaying the calendar heatmap
+      security: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          description: 8-character alphanumeric event identifier
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9]{8}$'
+      responses:
+        200:
+          description: Availability data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventAvailabilityResponse'
+        404:
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /guests/{guestId}:
+    get:
+      operationId: getGuest
+      summary: Get guest information
+      description: Retrieve guest details by guest ID
+      security: []
+      parameters:
+        - name: guestId
+          in: path
+          required: true
+          description: 8-character guest identifier (g + 7 alphanumeric chars)
+          schema:
+            type: string
+            pattern: '^g[A-Za-z0-9]{7}$'
+      responses:
+        200:
+          description: Guest details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Guest'
+        404:
+          description: Guest not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Failed to get guest data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /guests/{guestId}/name:
+    put:
+      operationId: updateGuestName
+      summary: Update guest name
+      description: Update the name of a guest
+      security: []
+      parameters:
+        - name: guestId
+          in: path
+          required: true
+          description: 8-character guest identifier (g + 7 alphanumeric chars)
+          schema:
+            type: string
+            pattern: '^g[A-Za-z0-9]{7}$'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  maxLength: 100
+                  description: Guest name
+                  example: "Human Name"
+      responses:
+        200:
+          description: Guest name updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Guest'
+        400:
+          description: Name is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Guest not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Failed to update guest name
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /guests/{guestId}/availability:
+    put:
+      operationId: updateGuestAvailability
+      summary: Update guest availability
+      description: Update the availability dates for a guest
+      security: []
+      parameters:
+        - name: guestId
+          in: path
+          required: true
+          description: 8-character guest identifier (g + 7 alphanumeric chars)
+          schema:
+            type: string
+            pattern: '^g[A-Za-z0-9]{7}$'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - availability
+              properties:
+                availability:
+                  type: array
+                  items:
+                    type: string
+                    format: date
+                  description: Array of available dates in YYYY-MM-DD format
+                  example: ["2024-01-15", "2024-01-16", "2024-01-18"]
+      responses:
+        200:
+          description: Availability updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Guest'
+        400:
+          description: Availability must be an array or failed to update availability
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Guest not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /guests/{guestId}/event:
+    get:
+      operationId: getGuestEvent
+      summary: Get event details and availability for guest
+      description: Retrieve event information (without eventId) and aggregated availability data for the event associated with this guest
+      security: []
+      parameters:
+        - name: guestId
+          in: path
+          required: true
+          description: 8-character guest identifier (g + 7 alphanumeric chars)
+          schema:
+            type: string
+            pattern: '^g[A-Za-z0-9]{7}$'
+      responses:
+        200:
+          description: Event details and availability data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuestEventResponse'
+        404:
+          description: Guest not found or associated event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
 components:
-  securitySchemes:
-    BasicAuth:
-      type: http
-      scheme: basic
   schemas:
-    ExampleResponse:
+    Event:
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - hostGuestId
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          pattern: '^[A-Za-z0-9]{8}$'
+          description: 8-character alphanumeric event identifier
+          example: "ABC123XY"
+        name:
+          type: string
+          maxLength: 200
+          description: Event name
+          example: "Fun Activity"
+        description:
+          type: string
+          maxLength: 2000
+          description: Long-form event description
+          example: "Let's have fun!"
+        hostGuestId:
+          type: string
+          pattern: '^[A-Za-z0-9]{8}$'
+          description: Host's guest ID for availability participation
+          example: "HOST123X"
+        createdAt:
+          type: string
+          format: date-time
+          description: Event creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Event last update timestamp
+    CreateEventRequest:
+      type: object
+      required:
+        - name
+        - description
+        - hostName
+      properties:
+        name:
+          type: string
+          maxLength: 200
+          description: Event name
+          example: "Fun Activity"
+        description:
+          type: string
+          maxLength: 2000
+          description: Long-form event description
+          example: "Let's have fun!"
+        hostName:
+          type: string
+          maxLength: 100
+          description: Name of the event host
+          example: "Human Name"
+    
+    UpdateEventRequest:
       type: object
       properties:
+        name:
+          type: string
+          maxLength: 200
+          description: Event name
+          example: "Fun Activity - Updated"
+        description:
+          type: string
+          maxLength: 2000
+          description: Long-form event description
+          example: "Updated description for the quarterly planning session"
+    
+    Guest:
+      type: object
+      required:
+        - id
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          pattern: '^[A-Za-z0-9]{8}$'
+          description: 8-character alphanumeric guest identifier
+          example: "DEF456ZW"
+        name:
+          type: string
+          maxLength: 100
+          description: Guest name
+          example: "Human Name"
+        createdAt:
+          type: string
+          format: date-time
+          description: Guest creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Guest last update timestamp
+    GuestLink:
+      type: object
+      required:
+        - guestId
+        - url
+      properties:
+        guestId:
+          type: string
+          pattern: '^[A-Za-z0-9]{8}$'
+          description: 8-character alphanumeric guest identifier
+          example: "DEF456ZW"
+        url:
+          type: string
+          format: uri
+          description: Unique URL for guest to submit availability
+          example: "/event/ABC123XY/guest/DEF456ZW"
+    
+    CreateGuestRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          description: Optional guest name to pre-populate
+          example: "Human Name"
+    GuestAvailabilityInfo:
+      type: object
+      required:
+        - id
+        - name
+        - availability
+        - isHost
+        - hasResponded
+      properties:
+        id:
+          type: string
+          pattern: '^[A-Za-z0-9]{8}$'
+          description: Guest identifier
+          example: "DEF456ZW"
+        name:
+          type: string
+          maxLength: 100
+          description: Guest name
+          example: "Human Name"
+        availability:
+          type: array
+          items:
+            type: string
+            format: date
+          description: List of available dates
+          example: ["2024-01-15", "2024-01-16", "2024-01-18"]
+        isHost:
+          type: boolean
+          description: Whether this guest is the event host
+          example: false
+        hasResponded:
+          type: boolean
+          description: Whether this guest has submitted their availability
+          example: true
+
+    EventAvailabilityResponse:
+      type: object
+      required:
+        - totalGuests
+        - respondedGuests
+        - guests
+      properties:
+        totalGuests:
+          type: integer
+          minimum: 0
+          description: Total number of guests invited
+          example: 5
+        respondedGuests:
+          type: integer
+          minimum: 0
+          description: Number of guests who have submitted availability
+          example: 3
+        guests:
+          type: array
+          items:
+            $ref: '#/components/schemas/GuestAvailabilityInfo'
+          description: List of all guests with their availability data
+
+    GuestEventResponse:
+      type: object
+      required:
+        - name
+        - description
+        - totalGuests
+        - respondedGuests
+        - guests
+      properties:
+        name:
+          type: string
+          maxLength: 200
+          description: Event name
+          example: "Fun Activity"
+        description:
+          type: string
+          maxLength: 2000
+          description: Long-form event description
+          example: "Let's have fun!"
+        totalGuests:
+          type: integer
+          minimum: 0
+          description: Total number of guests invited
+          example: 5
+        respondedGuests:
+          type: integer
+          minimum: 0
+          description: Number of guests who have submitted availability
+          example: 3
+        guests:
+          type: array
+          items:
+            $ref: '#/components/schemas/GuestAvailabilityInfo'
+          description: List of all guests with their availability data
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error type
+          example: "NOT_FOUND"
         message:
           type: string
+          description: Human-readable error message
+          example: "Event not found"
+        details:
+          type: object
+          description: Additional error details
+          additionalProperties: true
