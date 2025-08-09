@@ -350,22 +350,26 @@ export default function HostPage() {
   };
   
   const handleDeleteGuest = async (guest: ExtendedGuest) => {
+    if (!guest.id || !eventId) {
+      console.error('Missing guest ID or event ID');
+      return;
+    }
+    
     try {
-      await ApiService.deleteGuest(guest.id);
+      await ApiService.deleteGuest(eventId, guest.id);
       
       // Remove from local state
       setGuests(prev => prev.filter(g => g.id !== guest.id));
       
       // Refresh availability heatmap since guest was removed
       if (eventId) {
-        const heatmapData = await ApiService.getEventAvailability(eventId);
-        setAvailabilityHeatmap(createHeatmapFromGuests(heatmapData.guests));
-        setTotalGuests(heatmapData.totalGuests);
-        setRespondedGuests(heatmapData.respondedGuests);
+        const eventAvailability = await ApiService.getEventAvailability(eventId);
+        setAvailabilityHeatmap(createHeatmapFromGuests(eventAvailability.guests));
+        setTotalGuests(eventAvailability.totalGuests);
+        setRespondedGuests(eventAvailability.respondedGuests);
       }
     } catch (error) {
       console.error('Error deleting guest:', error);
-      alert('Failed to delete guest. Please try again.');
     }
   };
 

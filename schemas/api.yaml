@@ -356,7 +356,7 @@ components:
           type: string
           maxLength: 200
           description: Event name
-          example: "Team Planning Meeting"
+          example: "Fun Activity"
         description:
           type: string
           maxLength: 2000
@@ -387,7 +387,7 @@ components:
           type: string
           maxLength: 200
           description: Event name
-          example: "Team Planning Meeting"
+          example: "Fun Activity"
         description:
           type: string
           maxLength: 2000
@@ -397,7 +397,7 @@ components:
           type: string
           maxLength: 100
           description: Name of the event host
-          example: "John Smith"
+          example: "Human Name"
     
     UpdateEventRequest:
       type: object
@@ -406,7 +406,7 @@ components:
           type: string
           maxLength: 200
           description: Event name
-          example: "Team Planning Meeting - Updated"
+          example: "Fun Activity - Updated"
         description:
           type: string
           maxLength: 2000
@@ -429,7 +429,7 @@ components:
           type: string
           maxLength: 100
           description: Guest name
-          example: "John Doe"
+          example: "Human Name"
         createdAt:
           type: string
           format: date-time
@@ -474,7 +474,7 @@ components:
           type: string
           maxLength: 100
           description: Optional guest name to pre-populate
-          example: "John Doe"
+          example: "Human Name"
     
     UpdateGuestRequest:
       type: object
@@ -483,7 +483,7 @@ components:
           type: string
           maxLength: 100
           description: Guest name
-          example: "John Doe"
+          example: "Human Name"
     
     AvailabilitySubmission:
       type: object
@@ -589,7 +589,7 @@ components:
           type: string
           maxLength: 100
           description: Guest name
-          example: "John Doe"
+          example: "Human Name"
         availability:
           type: array
           items:
@@ -642,7 +642,7 @@ components:
           type: string
           maxLength: 200
           description: Event name
-          example: "Team Planning Meeting"
+          example: "Fun Activity"
         description:
           type: string
           maxLength: 2000

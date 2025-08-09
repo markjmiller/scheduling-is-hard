@@ -308,7 +308,7 @@ export default function GuestPage() {
         ) : (
           <div className="guest-info">
             <p className="guest-name">
-              Welcome, <strong>{guestName}</strong>!
+              Welcome, <strong>{guestName}</strong>
               <button 
                 className="edit-name-btn"
                 onClick={() => setIsEditingName(true)}
@@ -322,6 +322,10 @@ export default function GuestPage() {
         <div className="event-info">
           <h1>{event.name}</h1>
           <p>{event.description}</p>
+        </div>
+        <div className="event-link-warning">
+          <i className="fas fa-exclamation-triangle"></i>
+          <span>Your guest link can be edited by anyone with access. Treat it as a secret!</span>
         </div>
       </header>
 

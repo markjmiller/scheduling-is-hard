@@ -1,5 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import type { components } from "../../types/api";
+import { generateGuestId } from "./utils/id";
 
 type EventType = components["schemas"]["Event"];
 type CreateEventRequest = components["schemas"]["CreateEventRequest"];
@@ -32,22 +33,14 @@ export class Event extends DurableObject<Env> {
     return id;
   }
 
-  // Generate random 8-character alphanumeric ID
-  private generateId(): string {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < 8; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-  }
+
 
   async init(eventId: string, request: CreateEventRequest): Promise<EventType & { hostGuestId: string }> {
     await this.ctx.storage.put('id', eventId);
     
     const now = new Date().toISOString();
     
-    const hostGuestId = this.generateId();
+    const hostGuestId = generateGuestId();
     
     const eventData: EventData = {
       id: eventId,
@@ -146,7 +139,7 @@ export class Event extends DurableObject<Env> {
     }
 
     const eventId = await this.getId();
-    const guestId = this.generateId();
+    const guestId = generateGuestId();
     const now = new Date().toISOString();
     
     const guestData: GuestData = {

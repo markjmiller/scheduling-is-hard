@@ -166,8 +166,8 @@ export class ApiService {
   }
 
   // Delete guest
-  static async deleteGuest(guestId: string): Promise<void> {
-    const response = await fetch(`${API_BASE}/guests/${guestId}`, {
+  static async deleteGuest(eventId: string, guestId: string): Promise<void> {
+    const response = await fetch(`${API_BASE}/events/${eventId}/guests/${guestId}`, {
       method: 'DELETE',
     });
     

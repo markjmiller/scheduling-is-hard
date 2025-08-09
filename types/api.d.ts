@@ -528,7 +528,7 @@ export interface components {
             id: string;
             /**
              * @description Event name
-             * @example Team Planning Meeting
+             * @example Fun Activity
              */
             name: string;
             /**
@@ -555,7 +555,7 @@ export interface components {
         CreateEventRequest: {
             /**
              * @description Event name
-             * @example Team Planning Meeting
+             * @example Fun Activity
              */
             name: string;
             /**
@@ -565,14 +565,14 @@ export interface components {
             description: string;
             /**
              * @description Name of the event host
-             * @example John Smith
+             * @example Human Name
              */
             hostName: string;
         };
         UpdateEventRequest: {
             /**
              * @description Event name
-             * @example Team Planning Meeting - Updated
+             * @example Fun Activity - Updated
              */
             name?: string;
             /**
@@ -589,7 +589,7 @@ export interface components {
             id: string;
             /**
              * @description Guest name
-             * @example John Doe
+             * @example Human Name
              */
             name?: string;
             /**
@@ -623,14 +623,14 @@ export interface components {
         CreateGuestRequest: {
             /**
              * @description Optional guest name to pre-populate
-             * @example John Doe
+             * @example Human Name
              */
             name?: string;
         };
         UpdateGuestRequest: {
             /**
              * @description Guest name
-             * @example John Doe
+             * @example Human Name
              */
             name?: string;
         };
@@ -716,7 +716,7 @@ export interface components {
             id: string;
             /**
              * @description Guest name
-             * @example John Doe
+             * @example Human Name
              */
             name: string;
             /**
@@ -756,7 +756,7 @@ export interface components {
         GuestEventResponse: {
             /**
              * @description Event name
-             * @example Team Planning Meeting
+             * @example Fun Activity
              */
             name: string;
             /**

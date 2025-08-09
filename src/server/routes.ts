@@ -4,20 +4,14 @@ import { validator } from "hono/validator";
 import type { components } from "../../types/api";
 import { Event } from "./Event";
 import { Guest } from "./Guest";
+import { generateEventId } from "./utils/id";
 
 function isValidId(value: string): boolean {
-  return value.match(/^[0-9a-zA-Z]{8}$/g) !== null;
+  // Match event IDs (e + 7 chars) or guest IDs (g + 7 chars) = 8 chars total
+  return value.match(/^[eg][0-9a-zA-Z]{7}$/g) !== null;
 }
 
-// Generate random 8-character alphanumeric ID
-function generateId(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < 8; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
+
 
 declare module "hono" {
   interface ContextVariableMap {
@@ -60,7 +54,7 @@ api.post('/events',
     const eventData = c.req.valid('json');
     
     // Generate eventId first, then get the specific Event DO
-    const eventId = generateId();
+    const eventId = generateEventId();
     const eventDO = getEvent(c.env, eventId);
     
     const event = await eventDO.init(eventId, eventData);
@@ -378,6 +372,8 @@ api.delete('/events/:eventId/guests/:guestId',
 
       const eventDO = getEvent(c.env, eventId);
       await eventDO.removeGuest(guestData.id);
+
+      await guestDO.delete();
 
       return c.json({ message: 'Guest deleted successfully' });
     } catch (error) {

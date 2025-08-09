@@ -62,7 +62,7 @@ export default function CreateEventForm() {
             name="hostName"
             value={formData.hostName}
             onChange={handleInputChange}
-            placeholder="John Smith"
+            placeholder="Human Name"
             maxLength={100}
             required
             className="form-input"
@@ -81,7 +81,7 @@ export default function CreateEventForm() {
             name="name"
             value={formData.name}
             onChange={handleInputChange}
-            placeholder="Team Planning Meeting"
+            placeholder="Fun Activity"
             maxLength={200}
             required
             className="form-input"
