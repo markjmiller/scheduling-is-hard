@@ -4,6 +4,22 @@
   padding: 2rem;
 }
 
+.app-container {
+  padding: 2rem;
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-container {
+    padding: 1rem;
+  }
+}
+
 /* Mobile view: Remove root padding for full width */
 @media (max-width: 768px) {
   #root {

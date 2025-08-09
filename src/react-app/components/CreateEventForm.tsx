@@ -110,7 +110,7 @@ export default function CreateEventForm() {
             name="description"
             value={formData.description}
             onChange={handleInputChange}
-            placeholder="Let's coordinate our availability for the quarterly planning session..."
+            placeholder="Let's have fun!..."
             maxLength={2000}
             rows={4}
             required

@@ -461,7 +461,7 @@
   font-weight: 400;
   opacity: 0.8;
   font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
-  letter-spacing: 0.025em;
+  letter-spacing: 0.025rem;
 }
 
 /* Guest Link Generator */
@@ -727,7 +727,6 @@ tbody tr:last-child td {
     gap: 0.5rem;
   }
 
-  .guest-management,
   .host-availability {
     padding: 1.5rem;
   }

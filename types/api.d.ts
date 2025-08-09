@@ -533,7 +533,7 @@ export interface components {
             name: string;
             /**
              * @description Long-form event description
-             * @example Let's coordinate our availability for the quarterly planning session
+             * @example Let's have fun!
              */
             description: string;
             /**
@@ -560,7 +560,7 @@ export interface components {
             name: string;
             /**
              * @description Long-form event description
-             * @example Let's coordinate our availability for the quarterly planning session
+             * @example Let's have fun!
              */
             description: string;
             /**
@@ -761,7 +761,7 @@ export interface components {
             name: string;
             /**
              * @description Long-form event description
-             * @example Let's coordinate our availability for the quarterly planning session
+             * @example Let's have fun!
              */
             description: string;
             /**

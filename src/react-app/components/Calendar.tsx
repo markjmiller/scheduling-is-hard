@@ -144,7 +144,7 @@ export default function Calendar({
                   border: "1px solid #ffeaa7",
                   borderRadius: "12px",
                   padding: "2px 8px",
-                  fontSize: "0.75em",
+                  fontSize: "0.75rem",
                   fontWeight: "500",
                   marginLeft: "8px",
                   display: "inline-block",

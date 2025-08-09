@@ -190,7 +190,7 @@
   border-radius: 8px;
   overflow: hidden;
   margin-bottom: 1rem;
-  padding: 0.2em;
+  padding: 0.2rem;
 }
 
 .day-header {
@@ -201,7 +201,7 @@
   font-weight: 600;
   color: #4a5568;
   text-transform: uppercase;
-  letter-spacing: 0.025em;
+  letter-spacing: 0.025rem;
   border-radius: 6px;
 }
 
@@ -454,13 +454,13 @@
 .response-warning-icon {
   color: #f39c12;
   margin-left: 8px;
-  font-size: 0.9em;
+  font-size: 0.9rem;
 }
 
 .response-complete-icon {
   color: #27ae60;
   margin-left: 8px;
-  font-size: 0.9em;
+  font-size: 0.9rem;
 }
 
 /* Waiting text styling */
@@ -527,11 +527,7 @@
   }
 }
 
-@media (max-width: 640px) {
-  .calendar {
-    padding: 0.5rem;
-  }
-
+@media (max-width: 768px) {
   .calendar-header {
     margin-bottom: 0.75rem;
   }

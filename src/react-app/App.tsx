@@ -6,23 +6,18 @@ import "./css/CreateEventForm.css";
 
 function App() {
   return (
-    <>
+    <div className="app-container">
       <header className="app-header">
-        {/* <img
-            src="/scheduling-is-hard-logo.svg"
-            alt="Scheduling Is Hard Logo"
-            style={{ height: "2rem", width: "auto" }}
-          /> */}
-        <h1 className="app-title">Scheduling Is Hard</h1>
+        <h1 className="app-title">📆 Scheduling Is Hard 😓</h1>
         <p className="app-subtitle">
-          Mutually find availability with any number of people
+          Mutually find availability with people
         </p>
       </header>
 
       <main className="app-main">
         <CreateEventForm />
       </main>
-    </>
+    </div>
   );
 }
 
