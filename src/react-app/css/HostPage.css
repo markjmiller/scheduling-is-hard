@@ -100,7 +100,6 @@
   color: white;
   border: none;
   border-radius: 8px;
-  padding: 0.75rem 1.5rem;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
@@ -121,6 +120,8 @@
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
+  width: 100%;
+  justify-content: space-between;
 }
 
 .copy-event-link-btn {
@@ -128,7 +129,6 @@
   color: white;
   border: none;
   border-radius: 8px;
-  padding: 0.75rem 1.5rem;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
@@ -531,9 +531,9 @@
 
 /* Inline edit button in front of guest name */
 .edit-guest-btn-inline {
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
   border: 1px solid #cbd5e0;
   background: white;
   cursor: pointer;
@@ -541,10 +541,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   color: #667eea;
-  margin-right: 0.5rem;
-  margin-bottom: 0.25rem;
   flex-shrink: 0;
 }
 
@@ -688,7 +686,6 @@
   color: white;
   border: none;
   border-radius: 8px;
-  padding: 0.75rem 1.5rem;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
@@ -851,6 +848,12 @@ tbody tr:last-child td {
   border-color: #667eea;
 }
 
+.guest-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .delete-guest-btn {
   color: #e53e3e;
 }
@@ -955,17 +958,6 @@ tbody tr:last-child td {
     line-height: 1.4;
   }
 
-  /* Make buttons more touch-friendly on mobile */
-  .copy-link-btn,
-  .open-guest-page-btn,
-  .edit-guest-btn,
-  .delete-guest-btn {
-    min-height: 32px;
-    min-width: 32px;
-    padding: 0.5rem;
-    font-size: 0.75rem;
-  }
-
   /* Stack guest link actions vertically for better mobile UX */
   .guest-link-actions {
     display: flex;
@@ -1027,6 +1019,14 @@ tbody tr:last-child td {
 }
 
 @media (max-width: 480px) {
+  .event-header {
+    padding: 1rem;
+  }
+
+  .host-availability {
+    padding: 1rem;
+  }
+
   .event-details h1 {
     font-size: 1.5rem;
   }

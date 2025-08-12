@@ -9,6 +9,24 @@ import type { components } from "../../../types/api";
 type Event = components["schemas"]["Event"];
 type Guest = components["schemas"]["Guest"];
 
+// Utility function to deep compare guest arrays and prevent unnecessary re-renders
+const deepEqualGuestArrays = (a: any[], b: any[]): boolean => {
+  if (a.length !== b.length) return false;
+  
+  for (let i = 0; i < a.length; i++) {
+    const guestA = a[i];
+    const guestB = b[i];
+    
+    if (guestA.id !== guestB.id || 
+        guestA.name !== guestB.name || 
+        guestA.isHost !== guestB.isHost ||
+        JSON.stringify([...(guestA.availability || [])].sort()) !== JSON.stringify([...(guestB.availability || [])].sort())) {
+      return false;
+    }
+  }
+  return true;
+};
+
 interface ExtendedGuest extends Guest {
   availability?: string[];
   hasResponded: boolean;
@@ -151,9 +169,15 @@ export default function HostPage() {
           ApiService.getEventGuests(eventId),
         ]);
 
-        // Store all guest data and update heatmap with current filter
-        setAllGuestData(heatmapData.guests);
-        setAvailabilityHeatmap(createHeatmapFromGuests(heatmapData.guests, selectedGuestIds));
+        // Store all guest data (only if data actually changed)
+        const shouldUpdateGuestData = !deepEqualGuestArrays(allGuestData, heatmapData.guests);
+        
+        if (shouldUpdateGuestData) {
+          setAllGuestData(heatmapData.guests);
+        }
+        
+        // Always update heatmap (either with new or existing data)
+        setAvailabilityHeatmap(createHeatmapFromGuests(shouldUpdateGuestData ? heatmapData.guests : allGuestData, selectedGuestIds));
         setTotalGuests(heatmapData.totalGuests);
         setRespondedGuests(heatmapData.respondedGuests);
 
@@ -231,8 +255,13 @@ export default function HostPage() {
         ApiService.getEventGuests(eventId),
       ]);
 
-      // Store all guest data for filtering
-      setAllGuestData(heatmapData.guests);
+      // Store all guest data for filtering (only if data actually changed)
+      setAllGuestData(prevGuestData => {
+        if (deepEqualGuestArrays(prevGuestData, heatmapData.guests)) {
+          return prevGuestData; // Return same reference to prevent re-render
+        }
+        return heatmapData.guests;
+      });
       
       // Initialize with all guests selected ONLY if no selection exists yet
       const allGuestIds = heatmapData.guests.map((guest: any) => guest.id);
@@ -366,8 +395,16 @@ export default function HostPage() {
 
       // Refresh heatmap data
       const heatmapData = await ApiService.getEventAvailability(eventId);
-      setAllGuestData(heatmapData.guests);
-      setAvailabilityHeatmap(createHeatmapFromGuests(heatmapData.guests, selectedGuestIds));
+      
+      // Store all guest data (only if data actually changed)
+      const shouldUpdateGuestData = !deepEqualGuestArrays(allGuestData, heatmapData.guests);
+      
+      if (shouldUpdateGuestData) {
+        setAllGuestData(heatmapData.guests);
+      }
+      
+      // Always update heatmap (either with new or existing data)
+      setAvailabilityHeatmap(createHeatmapFromGuests(shouldUpdateGuestData ? heatmapData.guests : allGuestData, selectedGuestIds));
       setRespondedGuests(heatmapData.respondedGuests);
     } catch (error) {
       console.error("Error updating host availability:", error);
@@ -583,6 +620,13 @@ export default function HostPage() {
                 </div>
               </div>
             </div>
+            <div className="event-link-warning">
+              <i className="fas fa-exclamation-triangle"></i>
+              <span style={{ textWrap: "wrap" }}>
+                The event management link above is the only way to manage this
+                event and anyone with it can edit it. Treat it like a secret!
+              </span>
+            </div>
             <div className="event-actions">
               <button
                 className="edit-event-btn"
@@ -603,13 +647,6 @@ export default function HostPage() {
                 <i className="fas fa-copy"></i>
                 Copy Event Link
               </button>
-            </div>
-            <div className="event-link-warning">
-              <i className="fas fa-exclamation-triangle"></i>
-              <span style={{ textWrap: "wrap" }}>
-                The event management link above is the only way to manage this
-                event and anyone with it can edit it. Treat it like a secret!
-              </span>
             </div>
           </div>
         )}
@@ -654,7 +691,7 @@ export default function HostPage() {
         {/* Guests Table */}
         <div className="guests-table">
           <div className="guests-table-header">
-            <h3>
+            <h3 style={{ marginLeft: "0.25rem" }}>
               Invited Guests ({guests.filter(guest => {
                 const displayName = guest.name || guest.id;
                 return displayName.toLowerCase().includes(guestSearchTerm.toLowerCase());
@@ -700,7 +737,7 @@ export default function HostPage() {
                     <th>Name</th>
                     <th>Status</th>
                     <th>Guest Link</th>
-                    <th></th>
+                    <th>Edit</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -761,14 +798,6 @@ export default function HostPage() {
                         <td>
                           <div className="guest-name-display">
                             <div className="guest-name-row">
-                              <button
-                                className="edit-guest-btn-inline"
-                                title="Edit guest name"
-                                onClick={() => handleEditGuest(guest)}
-                                disabled={editingGuestId !== null}
-                              >
-                                <i className="fas fa-edit"></i>
-                              </button>
                               <div className="guest-name">
                                 {guest.name || `Name pending`}
                               </div>
@@ -810,14 +839,24 @@ export default function HostPage() {
                           </div>
                         </td>
                         <td>
-                          <button
-                            className="delete-guest-btn"
-                            title="Delete guest"
-                            onClick={() => handleDeleteGuest(guest)}
-                            disabled={editingGuestId !== null}
-                          >
-                            <i className="fas fa-trash"></i>
-                          </button>
+                          <div className="guest-actions">
+                            <button
+                              className="edit-guest-btn-inline"
+                              title="Edit guest name"
+                              onClick={() => handleEditGuest(guest)}
+                              disabled={editingGuestId !== null}
+                            >
+                              <i className="fas fa-edit"></i>
+                            </button>
+                            <button
+                              className="delete-guest-btn"
+                              title="Delete guest"
+                              onClick={() => handleDeleteGuest(guest)}
+                              disabled={editingGuestId !== null}
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          </div>
                         </td>
                       </>
                     )}
@@ -861,7 +900,7 @@ export default function HostPage() {
               </form>
             ) : (
               <div className="host-name-display">
-                <p className="host-name">
+                <p className="host-name" style={{ marginTop: "0rem" }}>
                   {hostName ? (
                     <>
                       Name: <strong>{hostName}</strong>
