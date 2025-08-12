@@ -2,7 +2,7 @@
 .dual-calendar-container {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1rem;
   width: 100%;
   max-width: 800px;
   margin: 0 auto;
@@ -126,17 +126,19 @@
 
 .nav-btn {
   background: none;
-  border: 2px solid #e2e8f0;
+  border: none;
+  font-size: 1.2rem;
   color: #4a5568;
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
   cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
   transition: all 0.2s;
-  font-size: 1rem;
 }
 
 .nav-btn:hover {
@@ -147,6 +149,30 @@
 
 .nav-btn:active {
   transform: scale(0.95);
+}
+
+/* Month indicator - red circle showing guest selections in other months */
+.month-indicator {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  color: #e53e3e;
+  font-size: 1.2rem;
+  font-weight: bold;
+  line-height: 1;
+  text-shadow: 0 0 2px rgba(229, 62, 62, 0.3);
+  animation: pulse-indicator 2s ease-in-out infinite;
+}
+
+@keyframes pulse-indicator {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
 }
 
 .month-year {
@@ -307,6 +333,11 @@
 .heatmap-day:hover {
   transform: none !important;
   background: inherit !important;
+}
+
+.heatmap-day.availability.nav-btn:hover {
+  background: #e2e8f0;
+  color: #2d3748;
 }
 
 .heatmap-day.availability-none {
@@ -475,7 +506,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding-top: 1rem;
+  padding-top: 0.5rem;
 }
 
 .selection-summary {
@@ -632,4 +663,261 @@
   .today-btn:active {
     background: #4c51bf;
   }
+}
+
+/* Guest Filter Dropdown Styles */
+.calendar-title {
+  padding: 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px 8px 8px 8px;
+}
+
+.guest-filter-section {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.filter-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  width: 100%;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  color: #4a5568;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-btn:hover {
+  background: #f7fafc;
+  border-color: #cbd5e0;
+}
+
+.filter-btn i {
+  color: #667eea;
+}
+
+.filter-dropdown {
+  width: 100%;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  margin-top: 0.75rem;
+  z-index: 10;
+}
+
+.filter-header {
+  padding: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+}
+
+.search-container {
+  margin-bottom: 0.75rem;
+  display: flex;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  background: white;
+  color: #2d3748;
+  transition: all 0.2s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.bulk-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.bulk-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: white;
+  color: #4a5568;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.bulk-btn:hover:not(:disabled) {
+  background: #f7fafc;
+  border-color: #cbd5e0;
+}
+
+.bulk-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bulk-btn.select-all:hover:not(:disabled) {
+  background: #ebf8ff;
+  border-color: #667eea;
+  color: #4c51bf;
+}
+
+.bulk-btn.select-none:hover:not(:disabled) {
+  background: #fef5e7;
+  border-color: #ed8936;
+  color: #c05621;
+}
+
+.guest-list {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.guest-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.guest-item:hover {
+  background: #f8fafc;
+}
+
+.guest-item:last-child {
+  border-bottom: none;
+}
+
+.guest-item input[type="checkbox"] {
+  margin: 0;
+  cursor: pointer;
+}
+
+.filter-guest-info {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.filter-guest-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #2d3748;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.375rem;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.host-star {
+  color: #f6d55c;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.active-user-star {
+  color: #f6d55c;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  margin-left: 0.25rem;
+}
+
+.filter-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-color: #e53e3e;
+  border-radius: 50%;
+  animation: filter-flash 1s ease-in-out infinite;
+}
+
+@keyframes filter-flash {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.2);
+  }
+}
+
+.filter-guest-id {
+  font-weight: 400;
+  color: #718096;
+  font-size: 0.75rem;
+}
+
+.responded-badge {
+  color: #38a169;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.no-results {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: #a0aec0;
+}
+
+.no-results i {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+/* Mobile responsiveness for filter dropdown */
+@media (max-width: 768px) {
+  .bulk-actions {
+    gap: 0.5rem;
+  }
+  
+  .guest-list {
+    max-height: 200px;
+  }
+  
+  .filter-btn {
+    font-size: 0.875rem;
+    padding: 0.75rem;
+  }
+}
+
+/* Focus styles for accessibility */
+.filter-btn:focus,
+.search-input:focus,
+.bulk-btn:focus,
+.guest-item:focus-within {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import Calendar from "./Calendar.tsx";
 import { ApiService } from "../services/api";
@@ -26,11 +26,32 @@ export default function GuestPage() {
   const [error, setError] = useState<string | null>(null);
   const [hostAvailability, setHostAvailability] = useState<string[]>([]);
 
-  // Helper function to convert guest data to heatmap
-  const createHeatmapFromGuests = (guests: any[]) => {
-    const heatmap = new Map<string, number>();
+  // Guest filter state
+  const [allGuestData, setAllGuestData] = useState<any[]>([]);
+  const [selectedGuestIds, setSelectedGuestIds] = useState<string[]>([]);
+  
+  // Shared month state for synchronized calendar navigation
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  const [hasInitializedMonth, setHasInitializedMonth] = useState<boolean>(false);
+  
+  // Debouncing for API calls
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingDatesRef = useRef<string[]>([]);
 
-    guests.forEach((guest) => {
+  // Helper function to convert guest data to heatmap with optional filtering
+  const createHeatmapFromGuests = (guests: any[], filterGuestIds?: string[]) => {
+    const heatmap = new Map<string, number>();
+    
+    // If filterGuestIds is provided and empty, return empty heatmap
+    if (filterGuestIds !== undefined && filterGuestIds.length === 0) {
+      return heatmap;
+    }
+    
+    const guestsToInclude = filterGuestIds && filterGuestIds.length > 0
+      ? guests.filter(guest => filterGuestIds.includes(guest.id))
+      : guests;
+
+    guestsToInclude.forEach((guest) => {
       if (guest.hasResponded && guest.availability) {
         guest.availability.forEach((date: string) => {
           const currentCount = heatmap.get(date) || 0;
@@ -41,6 +62,40 @@ export default function GuestPage() {
 
     return heatmap;
   };
+
+  // Memoize heatmap creation to prevent blinking on API calls when data hasn't changed
+  const availabilityHeatmapMemo = useMemo(() => {
+    if (allGuestData.length > 0) {
+      return createHeatmapFromGuests(allGuestData, selectedGuestIds);
+    }
+    return new Map<string, number>();
+  }, [allGuestData, selectedGuestIds]);
+
+  // Update heatmap state only when memoized value changes
+  useEffect(() => {
+    setAvailabilityHeatmap(availabilityHeatmapMemo);
+  }, [availabilityHeatmapMemo]);
+
+  // Smart calendar month initialization when host availability data loads
+  useEffect(() => {
+    if (!hasInitializedMonth && hostAvailability.length > 0) {
+      // Find the earliest date from host availability
+      const sortedDates = [...hostAvailability].sort();
+      const earliestDate = sortedDates[0];
+      
+      // Parse the date string (YYYY-MM-DD format)
+      const dateParts = earliestDate.split('-');
+      const year = parseInt(dateParts[0]);
+      const month = parseInt(dateParts[1]) - 1; // Month is 0-indexed
+      
+      // Set calendar to the first day of that month
+      const hostMonth = new Date(year, month, 1);
+      setCurrentMonth(hostMonth);
+      setHasInitializedMonth(true);
+    }
+  }, [hostAvailability, hasInitializedMonth]);
+
+
 
   // Helper function to extract host availability
   const extractHostAvailability = (guests: any[]) => {
@@ -81,8 +136,15 @@ export default function GuestPage() {
           updatedAt: "",
         });
 
-        // Update availability heatmap from guest data
-        setAvailabilityHeatmap(createHeatmapFromGuests(eventData.guests));
+        // Store all guest data for filtering and update heatmap
+        setAllGuestData(eventData.guests);
+        // Initialize with all guests selected ONLY if no selection exists yet
+        const allGuestIds = eventData.guests.map((guest: any) => guest.id);
+        setSelectedGuestIds(prev => {
+          const guestIds = prev.length === 0 ? allGuestIds : prev;
+          setAvailabilityHeatmap(createHeatmapFromGuests(eventData.guests, guestIds));
+          return guestIds;
+        });
         setTotalGuests(eventData.totalGuests);
         setRespondedGuests(eventData.respondedGuests);
 
@@ -118,6 +180,10 @@ export default function GuestPage() {
     return () => {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
+      }
+      // Cleanup debounce timeout on unmount
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
       }
     };
   }, [guestId, resetPollInterval]);
@@ -161,8 +227,13 @@ export default function GuestPage() {
         updatedAt: "",
       });
 
-      // Set availability heatmap from guest data
-      setAvailabilityHeatmap(createHeatmapFromGuests(eventData.guests));
+      // Store all guest data for filtering and preserve existing selections
+      setAllGuestData(eventData.guests);
+      setSelectedGuestIds(prev => {
+        const guestIds = prev.length === 0 ? eventData.guests.map((guest: any) => guest.id) : prev;
+        setAvailabilityHeatmap(createHeatmapFromGuests(eventData.guests, guestIds));
+        return guestIds;
+      });
       setTotalGuests(eventData.totalGuests);
       setRespondedGuests(eventData.respondedGuests);
 
@@ -217,39 +288,60 @@ export default function GuestPage() {
     }
   };
 
-  const handleDateToggle = async (date: string) => {
+  // Debounced API update function
+  const performDebouncedUpdate = useCallback(async (targetDates: string[]) => {
     if (!guestId) return;
 
-    const newSelectedDates = selectedDates.includes(date)
-      ? selectedDates.filter((d) => d !== date)
-      : [...selectedDates, date];
-
-    setSelectedDates(newSelectedDates);
-
-    // Reset poll interval to prevent server from overwriting user input
-    resetPollInterval();
-
-    // Live update to server
     try {
-      await ApiService.updateGuestAvailability(guestId, newSelectedDates);
+      await ApiService.updateGuestAvailability(guestId, targetDates);
       // Refresh heatmap data after update
       const heatmapData = await ApiService.getEventForGuest(guestId);
-      setAvailabilityHeatmap(createHeatmapFromGuests(heatmapData.guests));
+      setAllGuestData(heatmapData.guests);
+      setSelectedGuestIds(prev => {
+        const guestIds = prev.length === 0 ? heatmapData.guests.map((guest: any) => guest.id) : prev;
+        setAvailabilityHeatmap(createHeatmapFromGuests(heatmapData.guests, guestIds));
+        return guestIds;
+      });
       setRespondedGuests(heatmapData.respondedGuests);
 
       // Update host availability
       setHostAvailability(extractHostAvailability(heatmapData.guests));
     } catch (err) {
       console.error("Error updating availability:", err);
-      // Revert the change on error
-      setSelectedDates(selectedDates);
+      // Revert to previous state on error
+      setSelectedDates(pendingDatesRef.current);
     }
-  };
+  }, [guestId, setAllGuestData, setSelectedGuestIds, setAvailabilityHeatmap, setRespondedGuests, setHostAvailability, extractHostAvailability, createHeatmapFromGuests]);
+
+  const handleDateToggle = useCallback((date: string) => {
+    if (!guestId) return;
+
+    const newSelectedDates = selectedDates.includes(date)
+      ? selectedDates.filter((d) => d !== date)
+      : [...selectedDates, date];
+
+    // Immediate UI update for responsiveness
+    setSelectedDates(newSelectedDates);
+    pendingDatesRef.current = selectedDates; // Store previous state for potential rollback
+
+    // Reset poll interval to prevent server from overwriting user input
+    resetPollInterval();
+
+    // Clear existing debounce timeout
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+
+    // Set new debounced API call
+    debounceTimeoutRef.current = setTimeout(() => {
+      performDebouncedUpdate(newSelectedDates);
+    }, 300); // 300ms debounce delay
+  }, [guestId, selectedDates, resetPollInterval, performDebouncedUpdate]);
 
   if (loading) {
     return (
       <div className="guest-page">
-        <div className="loading">
+        <div className="guest-loading">
           <i className="fas fa-spinner fa-spin"></i>
           <p>Loading event...</p>
         </div>
@@ -260,12 +352,12 @@ export default function GuestPage() {
   if (error) {
     return (
       <div className="guest-page">
-        <div className="error">
+        <div className="guest-error">
           {error === "GUEST_NOT_FOUND" ? (
             <>
               <i className="fas fa-user-slash"></i>
               <h2>Guest Link Not Found</h2>
-              <p>
+              <p style={{ textWrap: "wrap" }}>
                 This guest invitation link is invalid or may have been deleted.
                 Please check the link or contact the event organizer for a new
                 invitation.
@@ -289,7 +381,7 @@ export default function GuestPage() {
   if (!event) {
     return (
       <div className="guest-page">
-        <div className="error">
+        <div className="guest-error">
           <i className="fas fa-calendar-times"></i>
           <h2>Event Not Found</h2>
           <p>The event you're looking for doesn't exist.</p>
@@ -367,6 +459,17 @@ export default function GuestPage() {
             }
             hostAvailability={hostAvailability}
             isHostView={false}
+            guests={allGuestData.map(guest => ({
+              id: guest.id,
+              name: guest.name,
+              isHost: Boolean(guest.isHost),
+              hasResponded: Boolean(guest.hasResponded && guest.availability?.length > 0)
+            }))}
+            selectedGuestIds={selectedGuestIds}
+            onGuestSelectionChange={setSelectedGuestIds}
+            activeUserId={guestId || undefined}
+            currentMonth={currentMonth}
+            onMonthChange={setCurrentMonth}
           />
         </div>
       </main>

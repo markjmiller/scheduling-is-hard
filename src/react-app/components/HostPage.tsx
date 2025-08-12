@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import Calendar from "./Calendar.tsx";
 import { ApiService } from "../services/api";
@@ -50,15 +50,39 @@ export default function HostPage() {
   const [totalGuests, setTotalGuests] = useState(0);
   const [respondedGuests, setRespondedGuests] = useState(0);
 
+  // Guest filter state
+  const [allGuestData, setAllGuestData] = useState<any[]>([]);
+  const [selectedGuestIds, setSelectedGuestIds] = useState<string[]>([]);
+  
+  // Shared month state for synchronized calendar navigation
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  const [hasInitializedMonth, setHasInitializedMonth] = useState<boolean>(false);
+  
+  // Debouncing for API calls
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingDatesRef = useRef<string[]>([]);
+
+  // Guest search state
+  const [guestSearchTerm, setGuestSearchTerm] = useState<string>("");
+
   // Loading and error states
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Helper function to convert guest data to heatmap
-  const createHeatmapFromGuests = (guests: any[]) => {
+  // Helper function to convert guest data to heatmap with optional filtering
+  const createHeatmapFromGuests = (guests: any[], filterGuestIds?: string[]) => {
     const heatmap = new Map<string, number>();
+    
+    // If filterGuestIds is provided and empty, return empty heatmap
+    if (filterGuestIds !== undefined && filterGuestIds.length === 0) {
+      return heatmap;
+    }
+    
+    const guestsToInclude = filterGuestIds && filterGuestIds.length > 0
+      ? guests.filter(guest => filterGuestIds.includes(guest.id))
+      : guests;
 
-    guests.forEach((guest) => {
+    guestsToInclude.forEach((guest) => {
       if (guest.hasResponded && guest.availability) {
         guest.availability.forEach((date: string) => {
           const currentCount = heatmap.get(date) || 0;
@@ -69,6 +93,40 @@ export default function HostPage() {
 
     return heatmap;
   };
+
+  // Memoize heatmap creation to prevent blinking on API calls when data hasn't changed
+  const availabilityHeatmapMemo = useMemo(() => {
+    if (allGuestData.length > 0) {
+      return createHeatmapFromGuests(allGuestData, selectedGuestIds);
+    }
+    return new Map<string, number>();
+  }, [allGuestData, selectedGuestIds]);
+
+  // Update heatmap state only when memoized value changes
+  useEffect(() => {
+    setAvailabilityHeatmap(availabilityHeatmapMemo);
+  }, [availabilityHeatmapMemo]);
+
+  // Smart calendar month initialization when host availability data loads
+  useEffect(() => {
+    if (!hasInitializedMonth && hostSelectedDates.length > 0) {
+      // Find the earliest date from host availability
+      const sortedDates = [...hostSelectedDates].sort();
+      const earliestDate = sortedDates[0];
+      
+      // Parse the date string (YYYY-MM-DD format)
+      const dateParts = earliestDate.split('-');
+      const year = parseInt(dateParts[0]);
+      const month = parseInt(dateParts[1]) - 1; // Month is 0-indexed
+      
+      // Set calendar to the first day of that month
+      const hostMonth = new Date(year, month, 1);
+      setCurrentMonth(hostMonth);
+      setHasInitializedMonth(true);
+    }
+  }, [hostSelectedDates, hasInitializedMonth]);
+
+
 
   useEffect(() => {
     loadEventData();
@@ -93,7 +151,9 @@ export default function HostPage() {
           ApiService.getEventGuests(eventId),
         ]);
 
-        setAvailabilityHeatmap(createHeatmapFromGuests(heatmapData.guests));
+        // Store all guest data and update heatmap with current filter
+        setAllGuestData(heatmapData.guests);
+        setAvailabilityHeatmap(createHeatmapFromGuests(heatmapData.guests, selectedGuestIds));
         setTotalGuests(heatmapData.totalGuests);
         setRespondedGuests(heatmapData.respondedGuests);
 
@@ -139,6 +199,10 @@ export default function HostPage() {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
       }
+      // Cleanup debounce timeout on unmount
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
     };
   }, [eventId, hostGuestId, resetPollInterval]);
 
@@ -167,7 +231,16 @@ export default function HostPage() {
         ApiService.getEventGuests(eventId),
       ]);
 
-      setAvailabilityHeatmap(createHeatmapFromGuests(heatmapData.guests));
+      // Store all guest data for filtering
+      setAllGuestData(heatmapData.guests);
+      
+      // Initialize with all guests selected ONLY if no selection exists yet
+      const allGuestIds = heatmapData.guests.map((guest: any) => guest.id);
+      setSelectedGuestIds(prev => {
+        const guestIds = prev.length === 0 ? allGuestIds : prev;
+        setAvailabilityHeatmap(createHeatmapFromGuests(heatmapData.guests, guestIds));
+        return guestIds;
+      });
       setRespondedGuests(heatmapData.respondedGuests);
       setTotalGuests(heatmapData.totalGuests);
 
@@ -259,11 +332,24 @@ export default function HostPage() {
       };
 
       setGuests((prev) => [...prev, newGuest]);
-      setNewGuestName("");
+    
+    // Automatically select the new guest in the filter
+    setSelectedGuestIds((prev) => [...prev, guestLink.guestId]);
+    
+    // Add the new guest to allGuestData for immediate heatmap inclusion
+    setAllGuestData((prev) => [...prev, {
+      id: guestLink.guestId,
+      name: newGuestName.trim() || undefined,
+      hasResponded: false,
+      availability: [],
+      isHost: false
+    }]);
+    
+    setNewGuestName("");
 
-      // Show success message with link
-      const fullLink = `${window.location.origin}/guest/${guestLink.guestId}`;
-      navigator.clipboard.writeText(fullLink);
+    // Show success message with link
+    const fullLink = `${window.location.origin}/guest/${guestLink.guestId}`;
+    navigator.clipboard.writeText(fullLink);
     } catch (error) {
       console.error("Error generating guest link:", error);
     } finally {
@@ -271,7 +357,26 @@ export default function HostPage() {
     }
   };
 
-  const handleHostDateToggle = async (date: string) => {
+  // Debounced API update function for host dates
+  const performDebouncedHostUpdate = useCallback(async (targetDates: string[]) => {
+    if (!eventId || !hostGuestId) return;
+
+    try {
+      await ApiService.updateGuestAvailability(hostGuestId, targetDates);
+
+      // Refresh heatmap data
+      const heatmapData = await ApiService.getEventAvailability(eventId);
+      setAllGuestData(heatmapData.guests);
+      setAvailabilityHeatmap(createHeatmapFromGuests(heatmapData.guests, selectedGuestIds));
+      setRespondedGuests(heatmapData.respondedGuests);
+    } catch (error) {
+      console.error("Error updating host availability:", error);
+      // Revert to previous state on error
+      setHostSelectedDates(pendingDatesRef.current);
+    }
+  }, [eventId, hostGuestId, setAllGuestData, selectedGuestIds, createHeatmapFromGuests]);
+
+  const handleHostDateToggle = useCallback((date: string) => {
     if (!eventId || !hostGuestId) return;
 
     // If "not available" is toggled, turn it off when host clicks any date
@@ -283,24 +388,23 @@ export default function HostPage() {
       ? hostSelectedDates.filter((d) => d !== date)
       : [...hostSelectedDates, date];
 
+    // Immediate UI update for responsiveness
     setHostSelectedDates(newSelectedDates);
+    pendingDatesRef.current = hostSelectedDates; // Store previous state for potential rollback
 
     // Reset poll interval to prevent server from overwriting user input
     resetPollInterval();
 
-    try {
-      await ApiService.updateGuestAvailability(hostGuestId, newSelectedDates);
-
-      // Refresh heatmap data
-      const heatmapData = await ApiService.getEventAvailability(eventId);
-      setAvailabilityHeatmap(createHeatmapFromGuests(heatmapData.guests));
-      setRespondedGuests(heatmapData.respondedGuests);
-    } catch (error) {
-      console.error("Error updating host availability:", error);
-      // Revert on error
-      setHostSelectedDates(hostSelectedDates);
+    // Clear existing debounce timeout
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
     }
-  };
+
+    // Set new debounced API call
+    debounceTimeoutRef.current = setTimeout(() => {
+      performDebouncedHostUpdate(newSelectedDates);
+    }, 300); // 300ms debounce delay
+  }, [eventId, hostGuestId, isHostNotAvailable, hostSelectedDates, resetPollInterval, performDebouncedHostUpdate]);
 
   const handleHostNotAvailable = async () => {
     if (!eventId || !hostGuestId) return;
@@ -400,7 +504,7 @@ export default function HostPage() {
   if (loading) {
     return (
       <div className="host-page">
-        <div className="loading">
+        <div className="host-loading">
           <i className="fas fa-spinner fa-spin"></i>
           <h2>Loading Event...</h2>
           <p>Please wait while we load your event details.</p>
@@ -412,7 +516,7 @@ export default function HostPage() {
   if (error || !event) {
     return (
       <div className="host-page">
-        <div className="error">
+        <div className="host-error">
           <i className="fas fa-calendar-times"></i>
           <h2>Event Not Found</h2>
           <p>
@@ -469,7 +573,7 @@ export default function HostPage() {
             </div>
           </form>
         ) : (
-          <div className="event-info">
+          <div className="host-event-info">
             <div className="event-details">
               <div style={{ padding: "1rem" }}>
                 <h1>{event.name}</h1>
@@ -502,9 +606,9 @@ export default function HostPage() {
             </div>
             <div className="event-link-warning">
               <i className="fas fa-exclamation-triangle"></i>
-              <span>
+              <span style={{ textWrap: "wrap" }}>
                 The event management link above is the only way to manage this
-                event. Save it securely!
+                event and anyone with it can edit it. Treat it like a secret!
               </span>
             </div>
           </div>
@@ -549,9 +653,38 @@ export default function HostPage() {
 
         {/* Guests Table */}
         <div className="guests-table">
-          <h3 style={{ paddingLeft: "1rem" }}>
-            Invited Guests ({guests.length})
-          </h3>
+          <div className="guests-table-header">
+            <h3>
+              Invited Guests ({guests.filter(guest => {
+                const displayName = guest.name || guest.id;
+                return displayName.toLowerCase().includes(guestSearchTerm.toLowerCase());
+              }).length}{guests.length !== guests.filter(guest => {
+                const displayName = guest.name || guest.id;
+                return displayName.toLowerCase().includes(guestSearchTerm.toLowerCase());
+              }).length ? ` of ${guests.length}` : ""})
+            </h3>
+            {guests.length > 0 && (
+              <div className="guest-search-box">
+                <i className="fas fa-search"></i>
+                <input
+                  type="text"
+                  placeholder="Search"
+                  value={guestSearchTerm}
+                  onChange={(e) => setGuestSearchTerm(e.target.value)}
+                  className="guest-search-input"
+                />
+                {guestSearchTerm && (
+                  <button
+                    onClick={() => setGuestSearchTerm("")}
+                    className="clear-search-btn"
+                    title="Clear search"
+                  >
+                    <i className="fas fa-times"></i>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
           {guests.length === 0 ? (
             <div className="empty-state">
               <i className="fas fa-user-plus"></i>
@@ -560,118 +693,139 @@ export default function HostPage() {
               </p>
             </div>
           ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Status</th>
-                  <th>Guest Link</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {guests.map((guest) => (
+            <div className="guests-table-container">
+              <table style={{ borderRadius: "0px" }}>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Guest Link</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {guests
+                    .filter(guest => {
+                      const displayName = guest.name || guest.id;
+                      return displayName.toLowerCase().includes(guestSearchTerm.toLowerCase());
+                    })
+                    .map((guest) => (
                   <tr key={guest.id}>
-                    <td>
-                      {editingGuestId === guest.id ? (
-                        <div className="guest-name-edit">
-                          <input
-                            type="text"
-                            value={editingGuestName}
-                            onChange={(e) =>
-                              setEditingGuestName(e.target.value)
-                            }
-                            className="guest-name-input-inline"
-                            autoFocus
-                            onKeyPress={(e) => {
-                              if (e.key === "Enter") {
-                                handleSaveGuestName(guest.id);
-                              } else if (e.key === "Escape") {
-                                handleCancelGuestEdit();
+                    {editingGuestId === guest.id ? (
+                      <td colSpan={4} className="guest-edit-row">
+                        <div className="guest-name-edit-full-width">
+                          <div className="guest-edit-info">
+                            <span className="guest-id-label">ID {guest.id}</span>
+                          </div>
+                          <div className="guest-edit-input-section">
+                            <input
+                              type="text"
+                              value={editingGuestName}
+                              onChange={(e) =>
+                                setEditingGuestName(e.target.value)
                               }
-                            }}
-                          />
-                          <button
-                            onClick={() => handleSaveGuestName(guest.id)}
-                            className="save-guest-name-btn"
-                            title="Save name"
-                          >
-                            <i className="fas fa-check"></i>
-                          </button>
-                          <button
-                            onClick={handleCancelGuestEdit}
-                            className="cancel-guest-name-btn"
-                            title="Cancel"
-                          >
-                            <i className="fas fa-times"></i>
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="guest-name-display">
-                          <div className="guest-name">
-                            {guest.name || `Name pending`}
+                              className="guest-name-input-full-width"
+                              placeholder="Enter guest name"
+                              autoFocus
+                              onKeyPress={(e) => {
+                                if (e.key === "Enter") {
+                                  handleSaveGuestName(guest.id);
+                                } else if (e.key === "Escape") {
+                                  handleCancelGuestEdit();
+                                }
+                              }}
+                            />
+                            <div className="guest-edit-actions">
+                              <button
+                                onClick={() => handleSaveGuestName(guest.id)}
+                                className="save-guest-name-btn"
+                                title="Save name"
+                              >
+                                <i className="fas fa-check"></i>
+                                Save
+                              </button>
+                              <button
+                                onClick={handleCancelGuestEdit}
+                                className="cancel-guest-name-btn"
+                                title="Cancel"
+                              >
+                                <i className="fas fa-times"></i>
+                                Cancel
+                              </button>
+                            </div>
                           </div>
-                          <div className="guest-id-subtitle">
-                            ID: {guest.id}
-                          </div>
                         </div>
-                      )}
-                    </td>
-                    <td>
-                      <span
-                        className={`status ${guest.hasResponded ? "responded" : "pending"}`}
-                      >
-                        {guest.hasResponded ? "Responded" : "Pending"}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="guest-link-actions">
-                        <button
-                          className="copy-link-btn"
-                          onClick={() => {
-                            const link = `${window.location.origin}/guest/${guest.id}`;
-                            navigator.clipboard.writeText(link);
-                          }}
-                          title="Copy guest link"
-                        >
-                          <i className="fas fa-copy"></i>
-                          Copy Link
-                        </button>
-                        <button
-                          className="open-guest-page-btn"
-                          onClick={() => {
-                            window.open(`/guest/${guest.id}`, "_blank");
-                          }}
-                          title={`Open guest ${guest.id} page`}
-                        >
-                          <i className="fas fa-external-link-alt"></i>
-                        </button>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="guest-actions">
-                        <button
-                          className="edit-guest-btn"
-                          title="Edit guest name"
-                          onClick={() => handleEditGuest(guest)}
-                          disabled={editingGuestId !== null}
-                        >
-                          <i className="fas fa-edit"></i>
-                        </button>
-                        <button
-                          className="delete-guest-btn"
-                          title="Delete guest"
-                          onClick={() => handleDeleteGuest(guest)}
-                          disabled={editingGuestId !== null}
-                        >
-                          <i className="fas fa-trash"></i>
-                        </button>
-                      </div>
-                    </td>
+                      </td>
+                    ) : (
+                      <>
+                        <td>
+                          <div className="guest-name-display">
+                            <div className="guest-name-row">
+                              <button
+                                className="edit-guest-btn-inline"
+                                title="Edit guest name"
+                                onClick={() => handleEditGuest(guest)}
+                                disabled={editingGuestId !== null}
+                              >
+                                <i className="fas fa-edit"></i>
+                              </button>
+                              <div className="guest-name">
+                                {guest.name || `Name pending`}
+                              </div>
+                            </div>
+                            <div className="guest-id-subtitle">
+                              ID: {guest.id}
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span
+                            className={`status ${guest.hasResponded ? "responded" : "pending"}`}
+                          >
+                            {guest.hasResponded ? "Responded" : "Pending"}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="guest-link-actions">
+                            <button
+                              className="copy-link-btn"
+                              onClick={() => {
+                                const link = `${window.location.origin}/guest/${guest.id}`;
+                                navigator.clipboard.writeText(link);
+                              }}
+                              title="Copy guest link"
+                            >
+                              <i className="fas fa-copy"></i>
+                              Copy Link
+                            </button>
+                            <button
+                              className="open-guest-page-btn"
+                              onClick={() => {
+                                window.open(`/guest/${guest.id}`, "_blank");
+                              }}
+                              title={`Open guest ${guest.id} page`}
+                            >
+                              <i className="fas fa-external-link-alt"></i>
+                            </button>
+                          </div>
+                        </td>
+                        <td>
+                          <button
+                            className="delete-guest-btn"
+                            title="Delete guest"
+                            onClick={() => handleDeleteGuest(guest)}
+                            disabled={editingGuestId !== null}
+                          >
+                            <i className="fas fa-trash"></i>
+                          </button>
+                        </td>
+                      </>
+                    )}
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           )}
         </div>
       </section>
@@ -765,6 +919,17 @@ export default function HostPage() {
             hostSelectedDates.length > 0 || isHostNotAvailable
           }
           isHostView={true}
+          guests={allGuestData.map(guest => ({
+            id: guest.id,
+            name: guest.name,
+            isHost: guest.id === hostGuestId,
+            hasResponded: Boolean(guest.hasResponded && guest.availability?.length > 0)
+          }))}
+          selectedGuestIds={selectedGuestIds}
+          onGuestSelectionChange={setSelectedGuestIds}
+          activeUserId={hostGuestId || undefined}
+          currentMonth={currentMonth}
+          onMonthChange={setCurrentMonth}
         />
       </section>
     </div>

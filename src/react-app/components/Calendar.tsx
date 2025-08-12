@@ -1,5 +1,13 @@
 import { useState } from "react";
+import GuestFilter from "./GuestFilter.tsx";
 import "../css/Calendar.css";
+
+interface GuestInfo {
+  id: string;
+  name?: string;
+  isHost?: boolean;
+  hasResponded?: boolean;
+}
 
 interface CalendarProps {
   selectedDates: string[];
@@ -13,6 +21,14 @@ interface CalendarProps {
   hasSubmittedAvailability?: boolean;
   hostAvailability?: string[]; // Host's available dates for guest view
   isHostView?: boolean; // Whether this is the host's own calendar
+  // Guest filter props
+  guests?: GuestInfo[];
+  selectedGuestIds?: string[];
+  onGuestSelectionChange?: (selectedIds: string[]) => void;
+  activeUserId?: string; // ID of the current user viewing the page
+  // External month control props
+  currentMonth?: Date;
+  onMonthChange?: (month: Date) => void;
 }
 
 export default function Calendar({
@@ -27,8 +43,40 @@ export default function Calendar({
   hasSubmittedAvailability,
   hostAvailability = [],
   isHostView = false,
+  guests = [],
+  selectedGuestIds = [],
+  onGuestSelectionChange,
+  activeUserId,
+  currentMonth: externalCurrentMonth,
+  onMonthChange,
 }: CalendarProps) {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  // Smart calendar month initialization based on host's earliest available date
+  const getInitialMonth = (): Date => {
+    // Get host availability data based on view type
+    const hostDates = isHostView ? selectedDates : hostAvailability;
+    
+    if (hostDates.length === 0) {
+      // No host availability set, default to current month
+      return new Date();
+    }
+    
+    // Find the earliest date from host availability
+    const sortedDates = [...hostDates].sort();
+    const earliestDate = sortedDates[0];
+    
+    // Parse the date string (YYYY-MM-DD format)
+    const dateParts = earliestDate.split('-');
+    const year = parseInt(dateParts[0]);
+    const month = parseInt(dateParts[1]) - 1; // Month is 0-indexed
+    
+    // Return the first day of that month
+    return new Date(year, month, 1);
+  };
+
+  // Use external month control if provided, otherwise use internal state
+  const [internalCurrentMonth, setInternalCurrentMonth] = useState(getInitialMonth());
+  const currentMonth = externalCurrentMonth || internalCurrentMonth;
+  const setCurrentMonth = onMonthChange || setInternalCurrentMonth;
 
   // Constants
   const monthNames = [
@@ -99,6 +147,33 @@ export default function Calendar({
     setCurrentMonth(new Date());
   };
 
+
+
+  // Check if there are guest selections in previous/next months
+  const hasGuestSelectionsInMonth = (year: number, month: number): boolean => {
+    // Create date strings for all days in the target month
+    const daysInTargetMonth = new Date(year, month + 1, 0).getDate();
+    
+    for (let day = 1; day <= daysInTargetMonth; day++) {
+      const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const guestCount = availabilityHeatmap.get(dateString) || 0;
+      if (guestCount > 0) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const hasSelectionInPreviousMonth = (): boolean => {
+    const prevMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
+    return hasGuestSelectionsInMonth(prevMonth.getFullYear(), prevMonth.getMonth());
+  };
+
+  const hasSelectionInNextMonth = (): boolean => {
+    const nextMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
+    return hasGuestSelectionsInMonth(nextMonth.getFullYear(), nextMonth.getMonth());
+  };
+
   // Availability calculation functions
   const getAvailabilityLevel = (date: string): number => {
     const rawCount = availabilityHeatmap.get(date) || 0;
@@ -162,6 +237,11 @@ export default function Calendar({
             title="Previous month"
           >
             <i className="fas fa-chevron-left"></i>
+            {hasSelectionInPreviousMonth() && (
+              <span className="month-indicator" title="Guest selections in previous month">
+                •
+              </span>
+            )}
           </button>
 
           <h3 className="month-year">
@@ -174,6 +254,11 @@ export default function Calendar({
             title="Next month"
           >
             <i className="fas fa-chevron-right"></i>
+            {hasSelectionInNextMonth() && (
+              <span className="month-indicator" title="Guest selections in next month">
+                •
+              </span>
+            )}
           </button>
         </div>
 
@@ -264,6 +349,55 @@ export default function Calendar({
               </div>
             </div>
           )}
+        </div>
+        
+        {/* Guest Filter Section */}
+        {onGuestSelectionChange && (
+          <GuestFilter
+            guests={guests}
+            selectedGuestIds={selectedGuestIds}
+            onGuestSelectionChange={onGuestSelectionChange}
+            activeUserId={activeUserId}
+          />
+        )}
+
+        {/* Month selector for mutual calendar */}
+        <div className="calendar-header">
+          <button
+            className="nav-btn"
+            onClick={goToPreviousMonth}
+            title="Previous month"
+          >
+            <i className="fas fa-chevron-left"></i>
+            {hasSelectionInPreviousMonth() && (
+              <span className="month-indicator" title="Guest selections in previous month">
+                •
+              </span>
+            )}
+          </button>
+
+          <h3 className="month-year">
+            {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+          </h3>
+
+          <button
+            className="nav-btn"
+            onClick={goToNextMonth}
+            title="Next month"
+          >
+            <i className="fas fa-chevron-right"></i>
+            {hasSelectionInNextMonth() && (
+              <span className="month-indicator" title="Guest selections in next month">
+                •
+              </span>
+            )}
+          </button>
+        </div>
+
+        <div className="calendar-controls">
+          <button className="today-btn" onClick={goToToday}>
+            Today
+          </button>
         </div>
 
         <div className="calendar-grid">

@@ -1,5 +1,6 @@
 .guest-page {
   max-width: 1200px;
+  min-width: 320px; /* Mobile minimum */
   margin: 0 auto;
   padding: 1rem;
   background: #f8f9fa;
@@ -9,8 +10,8 @@
 }
 
 /* Loading and Error States */
-.loading,
-.error {
+.guest-loading,
+.guest-error {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -20,14 +21,14 @@
   text-align: center;
 }
 
-.loading i,
-.error i {
+.guest-loading i,
+.guest-error i {
   font-size: 3rem;
   margin-bottom: 1rem;
   opacity: 0.8;
 }
 
-.error h2 {
+.guest-error h2 {
   margin-bottom: 0.5rem;
   color: #2d3748;
 }
@@ -41,11 +42,15 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
+.guest-info {
+  margin-bottom: 0.25rem;
+}
+
 .event-info {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 1rem;
+  gap: 0.25rem;
 }
 
 .event-info h1 {
@@ -111,13 +116,6 @@
   margin: 0;
   color: #718096;
   font-size: 0.875rem;
-}
-
-/* Guest Info */
-.guest-info {
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid #e2e8f0;
 }
 
 .guest-name {
@@ -243,10 +241,11 @@
 }
 
 /* Responsive Design */
-@media (min-width: 768px) {
+@media (min-width: 950px) {
   .guest-page {
     padding: 2rem;
-    max-width: 800px;
+    max-width: 1200px;
+    min-width: 800px; /* Desktop minimum for consistent layout */
     margin: 0 auto;
   }
 
