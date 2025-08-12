@@ -43,7 +43,7 @@ Scheduling with friends is hard. This app is designed to get mutual availability
 
 ## Workers Builds
 
-To set up PR previews on staging (creates new versions and branch urls on the staging Worker while keeping the production Worker's versions clean), these build settings were set up in the Cloudflare Workers dashboard:
+To set up PR previews on staging (creates new versions and branch preview urls on the staging Worker while keeping the production Worker's versions clean), these build settings were set up in the Cloudflare Workers dashboard:
 
 ### Staging
 
@@ -59,3 +59,5 @@ To set up PR previews on staging (creates new versions and branch urls on the st
 - Build command: (blank)
 - Enable non-production branch builds: Unchecked
 - Deploy command: npm run deploy-production
+
+Unfortunately, durable objects are currently not supported in preview branches, so those won't generate.
