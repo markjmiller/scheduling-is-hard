@@ -29,7 +29,9 @@ Scheduling with friends is hard. This app is designed to get mutual availability
 | Command | Description |
 |---------|-----------|
 | `npm run dev` | **Start development server** - Most commonly used for local development |
-| `npm run deploy` | **Deploy to Cloudflare** - Push your changes to production |
+| `npm run deploy-preview` | **Deploy to Cloudflare** - Push your changes to a new version on staging |
+| `npm run deploy-staging` | **Deploy to Cloudflare** - Push your changes to staging |
+| `npm run deploy-production` | **Deploy to Cloudflare** - Push your changes to production |
 | `npm run build` | **Build for production** - Compile TypeScript, bundle assets, and generate API docs |
 | `npm run check` | **Pre-deployment validation** - Verify code compiles and deployment readiness |
 | `npm run lint` | **Format code** - Auto-format source code with Prettier |
@@ -38,3 +40,22 @@ Scheduling with friends is hard. This app is designed to get mutual availability
 | `npm run cf-typegen` | **Generate Worker types** - Run when new Cloudflare bindings are added |
 | `npm run lint-openapi` | **Validate OpenAPI schema** - Check API documentation for errors |
 | `npm run preview-openapi` | **Preview API docs** - View OpenAPI documentation in browser |
+
+## Workers Builds
+
+To set up PR previews on staging (creates new versions and branch urls on the staging Worker while keeping the production Worker's versions clean), these build settings were set up in the Cloudflare Workers dashboard:
+
+### Staging
+
+- Branch: main
+- Build command: (blank)
+- Enable non-production branch builds: Unchecked
+- Deploy command: npm run deploy-staging
+- Non-production branch deploy command: npm run deploy-preview
+
+### Production
+
+- Branch: main
+- Build command: (blank)
+- Enable non-production branch builds: Unchecked
+- Deploy command: npm run deploy-production

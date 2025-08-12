@@ -9,6 +9,13 @@
     -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif;
 }
 
+/* Desktop minimum width for consistent layout */
+@media (min-width: 950px) {
+  .guest-page {
+    min-width: 800px;
+  }
+}
+
 /* Loading and Error States */
 .guest-loading,
 .guest-error {
@@ -241,20 +248,32 @@
 }
 
 /* Responsive Design */
-@media (min-width: 950px) {
-  .guest-page {
-    padding: 2rem;
-    max-width: 1200px;
-    min-width: 800px; /* Desktop minimum for consistent layout */
-    margin: 0 auto;
-  }
 
+/* Medium screens - match host page container padding */
+@media (max-width: 950px) {
+  .guest-page {
+    padding: 0.5rem;
+  }
+}
+
+/* Mobile styles - match host page component padding */
+@media (max-width: 480px) {
   .guest-header {
-    padding: 2rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
   }
 
   .availability-section {
-    padding: 2rem;
+    padding: 1rem;
+  }
+
+  .name-form {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+  }
+
+  .calendar-instructions {
+    margin: 0 0 1rem 0;
   }
 
   .name-input-group {

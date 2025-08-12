@@ -9,6 +9,24 @@ import type { components } from "../../../types/api";
 type Event = components["schemas"]["Event"];
 type Guest = components["schemas"]["Guest"];
 
+// Utility function to deep compare guest arrays and prevent unnecessary re-renders
+const deepEqualGuestArrays = (a: any[], b: any[]): boolean => {
+  if (a.length !== b.length) return false;
+  
+  for (let i = 0; i < a.length; i++) {
+    const guestA = a[i];
+    const guestB = b[i];
+    
+    if (guestA.id !== guestB.id || 
+        guestA.name !== guestB.name || 
+        guestA.isHost !== guestB.isHost ||
+        JSON.stringify([...(guestA.availability || [])].sort()) !== JSON.stringify([...(guestB.availability || [])].sort())) {
+      return false;
+    }
+  }
+  return true;
+};
+
 export default function GuestPage() {
   const { guestId } = useParams<{ guestId: string }>();
   const [event, setEvent] = useState<Event | null>(null);
@@ -136,8 +154,13 @@ export default function GuestPage() {
           updatedAt: "",
         });
 
-        // Store all guest data for filtering and update heatmap
-        setAllGuestData(eventData.guests);
+        // Store all guest data for filtering and update heatmap (only if data actually changed)
+        setAllGuestData(prevGuestData => {
+          if (deepEqualGuestArrays(prevGuestData, eventData.guests)) {
+            return prevGuestData; // Return same reference to prevent re-render
+          }
+          return eventData.guests;
+        });
         // Initialize with all guests selected ONLY if no selection exists yet
         const allGuestIds = eventData.guests.map((guest: any) => guest.id);
         setSelectedGuestIds(prev => {
@@ -227,8 +250,13 @@ export default function GuestPage() {
         updatedAt: "",
       });
 
-      // Store all guest data for filtering and preserve existing selections
-      setAllGuestData(eventData.guests);
+      // Store all guest data for filtering and preserve existing selections (only if data actually changed)
+      setAllGuestData(prevGuestData => {
+        if (deepEqualGuestArrays(prevGuestData, eventData.guests)) {
+          return prevGuestData; // Return same reference to prevent re-render
+        }
+        return eventData.guests;
+      });
       setSelectedGuestIds(prev => {
         const guestIds = prev.length === 0 ? eventData.guests.map((guest: any) => guest.id) : prev;
         setAvailabilityHeatmap(createHeatmapFromGuests(eventData.guests, guestIds));
@@ -296,7 +324,12 @@ export default function GuestPage() {
       await ApiService.updateGuestAvailability(guestId, targetDates);
       // Refresh heatmap data after update
       const heatmapData = await ApiService.getEventForGuest(guestId);
-      setAllGuestData(heatmapData.guests);
+      setAllGuestData(prevGuestData => {
+        if (deepEqualGuestArrays(prevGuestData, heatmapData.guests)) {
+          return prevGuestData; // Return same reference to prevent re-render
+        }
+        return heatmapData.guests;
+      });
       setSelectedGuestIds(prev => {
         const guestIds = prev.length === 0 ? heatmapData.guests.map((guest: any) => guest.id) : prev;
         setAvailabilityHeatmap(createHeatmapFromGuests(heatmapData.guests, guestIds));
