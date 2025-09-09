@@ -1,8 +1,10 @@
 # Scheduling Is Hard
 
-Mutually find availability with any number of people.
+Mutually find availability with any number of people. Try it out at https://scheduling-is-hard.com or deploy it yourself for free:
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/markjmiller/scheduling-is-hard)
+
+> This app uses [Cloudflare Turnstile](https://www.cloudflare.com/turnstile/) and by default uses testing keys. Update the `.env.production` and staging files to use your own keys.
 
 Scheduling with friends is hard. This app is designed to get mutual availability for any number of people, quickly. A host can create an event and then create as many unique links as they want to send out to guests. Invited guests submit their availability and a calendar heatmap of availability is displayed to everyone.
 
@@ -25,6 +27,8 @@ Scheduling with friends is hard. This app is designed to get mutual availability
 - [Architecture](./ARCHITECTURE.md)
 
 ## Dev
+
+Create a `.env` file copied from `.env.staging` or `.env.production`.
 
 | Command | Description |
 |---------|-----------|
@@ -52,6 +56,9 @@ To set up PR previews on staging (creates new versions and branch preview urls o
 - Enable non-production branch builds: Unchecked
 - Deploy command: npm run deploy-staging
 - Non-production branch deploy command: npm run deploy-preview
+- Variables:
+  - CF_TURNSTILE_SITE_KEY
+  - CF_TURNSTILE_SECRET_KEY
 
 ### Production
 
@@ -59,5 +66,8 @@ To set up PR previews on staging (creates new versions and branch preview urls o
 - Build command: (blank)
 - Enable non-production branch builds: Unchecked
 - Deploy command: npm run deploy-production
+- Variables:
+  - CF_TURNSTILE_SITE_KEY
+  - CF_TURNSTILE_SECRET_KEY
 
 Unfortunately, durable objects are currently not supported in preview branches, so those won't generate.

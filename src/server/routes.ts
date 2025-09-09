@@ -5,6 +5,8 @@ import type { components } from "../../types/api";
 import { Event } from "./Event";
 import { Guest } from "./Guest";
 import { generateEventId } from "./utils/id";
+import { validateTurnstile } from "./utils/validate-turnstile";
+import { getConnInfo } from "hono/cloudflare-workers";
 
 function isValidId(value: string): boolean {
   // Match event IDs (e + 7 chars) or guest IDs (g + 7 chars) = 8 chars total
@@ -29,6 +31,40 @@ app.get("/docs", async (c) =>
 );
 
 const api = new Hono<{ Bindings: Cloudflare.Env }>();
+
+// Turnstile token verification middleware
+api.use("*", async (c, next) => {
+  const token = c.req.header("X-Turnstile-Token");
+
+  if (!token) {
+    return c.json(
+      {
+        error: "UNAUTHORIZED",
+        message: "Turnstile token is required",
+      },
+      401,
+    );
+  }
+
+  const isValid = await validateTurnstile(
+    token,
+    getConnInfo(c).remote.address,
+    c.env,
+  );
+
+  if (!isValid) {
+    return c.json(
+      {
+        error: "UNAUTHORIZED",
+        message: "Invalid Turnstile token",
+      },
+      401,
+    );
+  }
+
+  // Token is valid, continue to the next handler
+  await next();
+});
 
 function getEvent(
   env: Cloudflare.Env,

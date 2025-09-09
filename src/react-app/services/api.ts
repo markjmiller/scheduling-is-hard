@@ -37,11 +37,33 @@ interface EventForGuest {
 // API base URL
 const API_BASE = "/api";
 
+// Store the Turnstile token globally for API calls
+let turnstileToken: string | null = null;
+
 export class ApiService {
+  // Set the Turnstile token for all subsequent API calls
+  static setTurnstileToken(token: string) {
+    turnstileToken = token;
+  }
+
+  // Get headers with Turnstile token
+  private static getHeaders(
+    additionalHeaders: Record<string, string> = {},
+  ): Record<string, string> {
+    const headers: Record<string, string> = {
+      ...additionalHeaders,
+    };
+
+    if (turnstileToken) {
+      headers["X-Turnstile-Token"] = turnstileToken;
+    }
+
+    return headers;
+  }
   static async createEvent(eventData: CreateEventRequest): Promise<Event> {
     const response = await fetch(`${API_BASE}/events`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: this.getHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify(eventData),
     });
 
@@ -53,7 +75,9 @@ export class ApiService {
   }
 
   static async getEvent(eventId: string): Promise<Event> {
-    const response = await fetch(`${API_BASE}/events/${eventId}`);
+    const response = await fetch(`${API_BASE}/events/${eventId}`, {
+      headers: this.getHeaders(),
+    });
 
     if (!response.ok) {
       throw new Error(`Failed to get event: ${response.statusText}`);
@@ -68,7 +92,7 @@ export class ApiService {
   ): Promise<Event> {
     const response = await fetch(`${API_BASE}/events/${eventId}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: this.getHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify(updateData),
     });
 
@@ -86,7 +110,7 @@ export class ApiService {
   ): Promise<GuestLink> {
     const response = await fetch(`${API_BASE}/events/${eventId}/guests`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: this.getHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({ guestName }),
     });
 
@@ -98,7 +122,9 @@ export class ApiService {
   }
 
   static async getGuest(guestId: string): Promise<Guest> {
-    const response = await fetch(`${API_BASE}/guests/${guestId}`);
+    const response = await fetch(`${API_BASE}/guests/${guestId}`, {
+      headers: this.getHeaders(),
+    });
 
     if (!response.ok) {
       throw new Error(`Failed to get guest: ${response.statusText}`);
@@ -111,7 +137,9 @@ export class ApiService {
   static async getEventAvailability(
     eventId: string,
   ): Promise<EventAvailability> {
-    const response = await fetch(`${API_BASE}/events/${eventId}/availability`);
+    const response = await fetch(`${API_BASE}/events/${eventId}/availability`, {
+      headers: this.getHeaders(),
+    });
 
     if (!response.ok) {
       throw new Error(
@@ -124,7 +152,9 @@ export class ApiService {
 
   // Get event availability heatmap
   static async getEventForGuest(guestId: string): Promise<EventForGuest> {
-    const response = await fetch(`${API_BASE}/guests/${guestId}/event`);
+    const response = await fetch(`${API_BASE}/guests/${guestId}/event`, {
+      headers: this.getHeaders(),
+    });
 
     if (!response.ok) {
       throw new Error(`Failed to get event for guest: ${response.statusText}`);
@@ -137,7 +167,7 @@ export class ApiService {
   static async updateGuestName(guestId: string, name: string): Promise<Guest> {
     const response = await fetch(`${API_BASE}/guests/${guestId}/name`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: this.getHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({ name }),
     });
 
@@ -155,7 +185,7 @@ export class ApiService {
   ): Promise<Guest> {
     const response = await fetch(`${API_BASE}/guests/${guestId}/availability`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: this.getHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({ availability }),
     });
 
@@ -170,7 +200,9 @@ export class ApiService {
 
   // Get event guests
   static async getEventGuests(eventId: string): Promise<Guest[]> {
-    const response = await fetch(`${API_BASE}/events/${eventId}/guests`);
+    const response = await fetch(`${API_BASE}/events/${eventId}/guests`, {
+      headers: this.getHeaders(),
+    });
 
     if (!response.ok) {
       throw new Error(`Failed to get event guests: ${response.statusText}`);
@@ -185,6 +217,7 @@ export class ApiService {
       `${API_BASE}/events/${eventId}/guests/${guestId}`,
       {
         method: "DELETE",
+        headers: this.getHeaders(),
       },
     );
 

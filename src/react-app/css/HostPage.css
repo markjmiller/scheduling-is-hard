@@ -614,7 +614,7 @@
   font-size: 1rem;
   background-color: #ffffff;
   color: #2c3e50;
-  transition: 
+  transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
   font-family: inherit;
@@ -997,7 +997,7 @@ tbody tr:last-child td {
   }
 
   .status.pending {
-    background: none;;
+    background: none;
   }
 
   .status.pending::before {
@@ -1007,15 +1007,31 @@ tbody tr:last-child td {
   }
 
   /* Mobile table column widths */
-  thead th:nth-child(1) { width: 30%; } /* Name - wider */
-  thead th:nth-child(2) { width: 20%; } /* Status */
-  thead th:nth-child(3) { width: 30%; } /* Guest Link - wider */
-  thead th:nth-child(4) { width: 20%; } /* Actions */
+  thead th:nth-child(1) {
+    width: 30%;
+  } /* Name - wider */
+  thead th:nth-child(2) {
+    width: 20%;
+  } /* Status */
+  thead th:nth-child(3) {
+    width: 30%;
+  } /* Guest Link - wider */
+  thead th:nth-child(4) {
+    width: 20%;
+  } /* Actions */
 
-  tbody td:nth-child(1) { width: 30%; }
-  tbody td:nth-child(2) { width: 20%; }
-  tbody td:nth-child(3) { width: 30%; }
-  tbody td:nth-child(4) { width: 20%; }
+  tbody td:nth-child(1) {
+    width: 30%;
+  }
+  tbody td:nth-child(2) {
+    width: 20%;
+  }
+  tbody td:nth-child(3) {
+    width: 30%;
+  }
+  tbody td:nth-child(4) {
+    width: 20%;
+  }
 }
 
 @media (max-width: 480px) {
