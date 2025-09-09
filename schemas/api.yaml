@@ -19,7 +19,8 @@ paths:
       operationId: createEvent
       summary: Create a new event
       description: Create a new scheduling event with name, description, and expected attendee count
-      security: []
+      security:
+        - TurnstileToken: []
       requestBody:
         required: true
         content:
@@ -45,7 +46,8 @@ paths:
       operationId: getEvent
       summary: Get event details
       description: Retrieve details of a specific event
-      security: []
+      security:
+        - TurnstileToken: []
       parameters:
         - name: eventId
           in: path
@@ -72,7 +74,8 @@ paths:
       operationId: updateEvent
       summary: Update event details
       description: Update name, description, or expected attendee count for an event
-      security: []
+      security:
+        - TurnstileToken: []
       parameters:
         - name: eventId
           in: path
@@ -112,7 +115,8 @@ paths:
       operationId: generateGuestLink
       summary: Generate unique guest link
       description: Create a new unique guest identifier and return the guest URL
-      security: []
+      security:
+        - TurnstileToken: []
       parameters:
         - name: eventId
           in: path
@@ -144,7 +148,8 @@ paths:
       operationId: getEventGuests
       summary: Get all guests for an event
       description: Retrieve list of all guests invited to an event with their response status
-      security: []
+      security:
+        - TurnstileToken: []
       parameters:
         - name: eventId
           in: path
@@ -180,7 +185,8 @@ paths:
       operationId: deleteGuest
       summary: Delete a guest
       description: Remove a guest and their availability data from the event
-      security: []
+      security:
+        - TurnstileToken: []
       parameters:
         - name: eventId
           in: path
@@ -222,7 +228,8 @@ paths:
       operationId: getEventAvailability
       summary: Get aggregated availability for heatmap
       description: Retrieve all guest availability data for displaying the calendar heatmap
-      security: []
+      security:
+        - TurnstileToken: []
       parameters:
         - name: eventId
           in: path
@@ -250,7 +257,8 @@ paths:
       operationId: getGuest
       summary: Get guest information
       description: Retrieve guest details by guest ID
-      security: []
+      security:
+        - TurnstileToken: []
       parameters:
         - name: guestId
           in: path
@@ -284,7 +292,8 @@ paths:
       operationId: updateGuestName
       summary: Update guest name
       description: Update the name of a guest
-      security: []
+      security:
+        - TurnstileToken: []
       parameters:
         - name: guestId
           in: path
@@ -338,7 +347,8 @@ paths:
       operationId: updateGuestAvailability
       summary: Update guest availability
       description: Update the availability dates for a guest
-      security: []
+      security:
+        - TurnstileToken: []
       parameters:
         - name: guestId
           in: path
@@ -388,7 +398,8 @@ paths:
       operationId: getGuestEvent
       summary: Get event details and availability for guest
       description: Retrieve event information (without eventId) and aggregated availability data for the event associated with this guest
-      security: []
+      security:
+        - TurnstileToken: []
       parameters:
         - name: guestId
           in: path
@@ -412,6 +423,12 @@ paths:
                 $ref: '#/components/schemas/Error'
 
 components:
+  securitySchemes:
+    TurnstileToken:
+      type: apiKey
+      in: header
+      name: X-Turnstile-Token
+      description: Cloudflare Turnstile verification token
   schemas:
     Event:
       type: object

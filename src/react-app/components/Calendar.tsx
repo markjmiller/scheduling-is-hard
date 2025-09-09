@@ -54,27 +54,28 @@ export default function Calendar({
   const getInitialMonth = (): Date => {
     // Get host availability data based on view type
     const hostDates = isHostView ? selectedDates : hostAvailability;
-    
+
     if (hostDates.length === 0) {
       // No host availability set, default to current month
       return new Date();
     }
-    
+
     // Find the earliest date from host availability
     const sortedDates = [...hostDates].sort();
     const earliestDate = sortedDates[0];
-    
+
     // Parse the date string (YYYY-MM-DD format)
-    const dateParts = earliestDate.split('-');
+    const dateParts = earliestDate.split("-");
     const year = parseInt(dateParts[0]);
     const month = parseInt(dateParts[1]) - 1; // Month is 0-indexed
-    
+
     // Return the first day of that month
     return new Date(year, month, 1);
   };
 
   // Use external month control if provided, otherwise use internal state
-  const [internalCurrentMonth, setInternalCurrentMonth] = useState(getInitialMonth());
+  const [internalCurrentMonth, setInternalCurrentMonth] =
+    useState(getInitialMonth());
   const currentMonth = externalCurrentMonth || internalCurrentMonth;
   const setCurrentMonth = onMonthChange || setInternalCurrentMonth;
 
@@ -147,15 +148,13 @@ export default function Calendar({
     setCurrentMonth(new Date());
   };
 
-
-
   // Check if there are guest selections in previous/next months
   const hasGuestSelectionsInMonth = (year: number, month: number): boolean => {
     // Create date strings for all days in the target month
     const daysInTargetMonth = new Date(year, month + 1, 0).getDate();
-    
+
     for (let day = 1; day <= daysInTargetMonth; day++) {
-      const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dateString = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
       const guestCount = availabilityHeatmap.get(dateString) || 0;
       if (guestCount > 0) {
         return true;
@@ -165,13 +164,27 @@ export default function Calendar({
   };
 
   const hasSelectionInPreviousMonth = (): boolean => {
-    const prevMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
-    return hasGuestSelectionsInMonth(prevMonth.getFullYear(), prevMonth.getMonth());
+    const prevMonth = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth() - 1,
+      1,
+    );
+    return hasGuestSelectionsInMonth(
+      prevMonth.getFullYear(),
+      prevMonth.getMonth(),
+    );
   };
 
   const hasSelectionInNextMonth = (): boolean => {
-    const nextMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
-    return hasGuestSelectionsInMonth(nextMonth.getFullYear(), nextMonth.getMonth());
+    const nextMonth = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth() + 1,
+      1,
+    );
+    return hasGuestSelectionsInMonth(
+      nextMonth.getFullYear(),
+      nextMonth.getMonth(),
+    );
   };
 
   // Availability calculation functions
@@ -238,7 +251,10 @@ export default function Calendar({
           >
             <i className="fas fa-chevron-left"></i>
             {hasSelectionInPreviousMonth() && (
-              <span className="month-indicator" title="Guest selections in previous month">
+              <span
+                className="month-indicator"
+                title="Guest selections in previous month"
+              >
                 •
               </span>
             )}
@@ -255,7 +271,10 @@ export default function Calendar({
           >
             <i className="fas fa-chevron-right"></i>
             {hasSelectionInNextMonth() && (
-              <span className="month-indicator" title="Guest selections in next month">
+              <span
+                className="month-indicator"
+                title="Guest selections in next month"
+              >
                 •
               </span>
             )}
@@ -350,7 +369,7 @@ export default function Calendar({
             </div>
           )}
         </div>
-        
+
         {/* Guest Filter Section */}
         {onGuestSelectionChange && (
           <GuestFilter
@@ -370,7 +389,10 @@ export default function Calendar({
           >
             <i className="fas fa-chevron-left"></i>
             {hasSelectionInPreviousMonth() && (
-              <span className="month-indicator" title="Guest selections in previous month">
+              <span
+                className="month-indicator"
+                title="Guest selections in previous month"
+              >
                 •
               </span>
             )}
@@ -387,7 +409,10 @@ export default function Calendar({
           >
             <i className="fas fa-chevron-right"></i>
             {hasSelectionInNextMonth() && (
-              <span className="month-indicator" title="Guest selections in next month">
+              <span
+                className="month-indicator"
+                title="Guest selections in next month"
+              >
                 •
               </span>
             )}

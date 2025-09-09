@@ -165,7 +165,8 @@
 }
 
 @keyframes pulse-indicator {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }
@@ -862,7 +863,8 @@
 }
 
 @keyframes filter-flash {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }
@@ -902,11 +904,11 @@
   .bulk-actions {
     gap: 0.5rem;
   }
-  
+
   .guest-list {
     max-height: 200px;
   }
-  
+
   .filter-btn {
     font-size: 0.875rem;
     padding: 0.75rem;
