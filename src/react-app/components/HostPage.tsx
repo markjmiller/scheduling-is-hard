@@ -831,7 +831,7 @@ export default function HostPage() {
                                   className="guest-name-input-full-width"
                                   placeholder="Enter guest name"
                                   autoFocus
-                                  onKeyPress={(e) => {
+                                  onKeyUp={(e) => {
                                     if (e.key === "Enter") {
                                       handleSaveGuestName(guest.id);
                                     } else if (e.key === "Escape") {
@@ -886,17 +886,6 @@ export default function HostPage() {
                             <td>
                               <div className="guest-link-actions">
                                 <button
-                                  className="copy-link-btn"
-                                  onClick={() => {
-                                    const link = `${window.location.origin}/guest/${guest.id}`;
-                                    navigator.clipboard.writeText(link);
-                                  }}
-                                  title="Copy guest link"
-                                >
-                                  <i className="fas fa-copy"></i>
-                                  Copy Link
-                                </button>
-                                <button
                                   className="open-guest-page-btn"
                                   onClick={() => {
                                     window.open(`/guest/${guest.id}`, "_blank");
@@ -905,6 +894,37 @@ export default function HostPage() {
                                 >
                                   <i className="fas fa-external-link-alt"></i>
                                 </button>
+                                <button
+                                  className="open-guest-page-btn"
+                                  onClick={() => {
+                                    const link = `${window.location.origin}/guest/${guest.id}`;
+                                    navigator.clipboard.writeText(link);
+                                  }}
+                                  title="Copy guest link"
+                                >
+                                  <i className="fas fa-copy"></i>
+                                </button>
+                                {navigator.share && (
+                                  <button
+                                    className="open-guest-page-btn"
+                                    onClick={async () => {
+                                      const link = `${window.location.origin}/guest/${guest.id}`;
+                                      try {
+                                        await navigator.share({
+                                          title: `${event?.name || 'Event'} - Availability Request`,
+                                          text: `Please share your availability for "${event?.name || 'our event'}"`,
+                                          url: link,
+                                        });
+                                      } catch (error) {
+                                        // Fallback to clipboard if share fails
+                                        navigator.clipboard.writeText(link);
+                                      }
+                                    }}
+                                    title="Share guest link"
+                                  >
+                                    <i className="fas fa-share"></i>
+                                  </button>
+                                )}
                               </div>
                             </td>
                             <td>
