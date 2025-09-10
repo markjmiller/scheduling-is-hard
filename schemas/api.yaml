@@ -14,13 +14,44 @@ servers:
         default: replace-me
 
 paths:
+  /auth/verify:
+    post:
+      operationId: verifyTurnstile
+      summary: Verify Turnstile token and get JWT
+      description: Exchange a valid Turnstile token for a JWT that expires in 24 hours
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyTurnstileRequest'
+      responses:
+        200:
+          description: JWT token generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyTurnstileResponse'
+        400:
+          description: Invalid or missing Turnstile token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Turnstile token verification failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /events:
     post:
       operationId: createEvent
       summary: Create a new event
       description: Create a new scheduling event with name, description, and expected attendee count
       security:
-        - TurnstileToken: []
+        - JWTAuth: []
       requestBody:
         required: true
         content:
@@ -47,7 +78,7 @@ paths:
       summary: Get event details
       description: Retrieve details of a specific event
       security:
-        - TurnstileToken: []
+        - JWTAuth: []
       parameters:
         - name: eventId
           in: path
@@ -75,7 +106,7 @@ paths:
       summary: Update event details
       description: Update name, description, or expected attendee count for an event
       security:
-        - TurnstileToken: []
+        - JWTAuth: []
       parameters:
         - name: eventId
           in: path
@@ -116,7 +147,7 @@ paths:
       summary: Generate unique guest link
       description: Create a new unique guest identifier and return the guest URL
       security:
-        - TurnstileToken: []
+        - JWTAuth: []
       parameters:
         - name: eventId
           in: path
@@ -149,7 +180,7 @@ paths:
       summary: Get all guests for an event
       description: Retrieve list of all guests invited to an event with their response status
       security:
-        - TurnstileToken: []
+        - JWTAuth: []
       parameters:
         - name: eventId
           in: path
@@ -186,7 +217,7 @@ paths:
       summary: Delete a guest
       description: Remove a guest and their availability data from the event
       security:
-        - TurnstileToken: []
+        - JWTAuth: []
       parameters:
         - name: eventId
           in: path
@@ -229,7 +260,7 @@ paths:
       summary: Get aggregated availability for heatmap
       description: Retrieve all guest availability data for displaying the calendar heatmap
       security:
-        - TurnstileToken: []
+        - JWTAuth: []
       parameters:
         - name: eventId
           in: path
@@ -258,7 +289,7 @@ paths:
       summary: Get guest information
       description: Retrieve guest details by guest ID
       security:
-        - TurnstileToken: []
+        - JWTAuth: []
       parameters:
         - name: guestId
           in: path
@@ -293,7 +324,7 @@ paths:
       summary: Update guest name
       description: Update the name of a guest
       security:
-        - TurnstileToken: []
+        - JWTAuth: []
       parameters:
         - name: guestId
           in: path
@@ -348,7 +379,7 @@ paths:
       summary: Update guest availability
       description: Update the availability dates for a guest
       security:
-        - TurnstileToken: []
+        - JWTAuth: []
       parameters:
         - name: guestId
           in: path
@@ -399,7 +430,7 @@ paths:
       summary: Get event details and availability for guest
       description: Retrieve event information (without eventId) and aggregated availability data for the event associated with this guest
       security:
-        - TurnstileToken: []
+        - JWTAuth: []
       parameters:
         - name: guestId
           in: path
@@ -424,11 +455,11 @@ paths:
 
 components:
   securitySchemes:
-    TurnstileToken:
-      type: apiKey
-      in: header
-      name: X-Turnstile-Token
-      description: Cloudflare Turnstile verification token
+    JWTAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from /auth/verify endpoint
   schemas:
     Event:
       type: object
@@ -647,6 +678,32 @@ components:
           items:
             $ref: '#/components/schemas/GuestAvailabilityInfo'
           description: List of all guests with their availability data
+
+    VerifyTurnstileRequest:
+      type: object
+      required:
+        - turnstileToken
+      properties:
+        turnstileToken:
+          type: string
+          description: Cloudflare Turnstile verification token
+          example: "0.ABC123..."
+    
+    VerifyTurnstileResponse:
+      type: object
+      required:
+        - jwt
+        - expiresAt
+      properties:
+        jwt:
+          type: string
+          description: JWT token for API authentication
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        expiresAt:
+          type: string
+          format: date-time
+          description: JWT expiration timestamp
+          example: "2024-01-16T12:00:00Z"
 
     Error:
       type: object

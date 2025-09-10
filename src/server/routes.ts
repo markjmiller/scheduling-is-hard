@@ -6,6 +6,7 @@ import { Event } from "./Event";
 import { Guest } from "./Guest";
 import { generateEventId } from "./utils/id";
 import { validateTurnstile } from "./utils/validate-turnstile";
+import { signJWT } from "./utils/jwt";
 import { getConnInfo } from "hono/cloudflare-workers";
 
 function isValidId(value: string): boolean {
@@ -31,38 +32,96 @@ app.get("/docs", async (c) =>
 );
 
 const api = new Hono<{ Bindings: Cloudflare.Env }>();
+const auth = new Hono<{ Bindings: Cloudflare.Env }>();
 
-// Turnstile token verification middleware
+auth.post(
+  "/verify",
+  validator("json", (value, c) => {
+    const data = value as components["schemas"]["VerifyTurnstileRequest"];
+    if (!data.turnstileToken) {
+      return c.json(
+        { error: "INVALID_REQUEST", message: "Turnstile token is required" },
+        400,
+      );
+    }
+    return data;
+  }),
+  async (c) => {
+    const { turnstileToken } = c.req.valid("json");
+
+    const isValid = await validateTurnstile(
+      turnstileToken,
+      getConnInfo(c).remote.address,
+    );
+
+    if (!isValid) {
+      return c.json(
+        {
+          error: "UNAUTHORIZED",
+          message: "Invalid Turnstile token",
+        },
+        401,
+      );
+    }
+
+    const jwtSecret = import.meta.env.VITE_JWT_SECRET_KEY;
+    if (!jwtSecret) {
+      return c.json(
+        {
+          error: "SERVER_ERROR",
+          message: "JWT secret not configured",
+        },
+        500,
+      );
+    }
+
+    const { token, expiresAt } = signJWT(jwtSecret);
+
+    return c.json({
+      jwt: token,
+      expiresAt: expiresAt.toISOString(),
+    });
+  },
+);
+
 api.use("*", async (c, next) => {
-  const token = c.req.header("X-Turnstile-Token");
+  const jwtSecret = import.meta.env.VITE_JWT_SECRET_KEY;
+  if (!jwtSecret) {
+    return c.json(
+      {
+        error: "SERVER_ERROR",
+        message: "JWT secret not configured",
+      },
+      500,
+    );
+  }
 
-  if (!token) {
+  const authHeader = c.req.header("Authorization");
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return c.json(
       {
         error: "UNAUTHORIZED",
-        message: "Turnstile token is required",
+        message: "JWT token is required",
       },
       401,
     );
   }
 
-  const isValid = await validateTurnstile(
-    token,
-    getConnInfo(c).remote.address,
-    c.env,
-  );
+  const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+  const { verifyJWT } = await import("./utils/jwt");
+  const payload = verifyJWT(token, jwtSecret);
 
-  if (!isValid) {
+  if (!payload) {
     return c.json(
       {
         error: "UNAUTHORIZED",
-        message: "Invalid Turnstile token",
+        message: "Invalid or expired JWT token",
       },
       401,
     );
   }
 
-  // Token is valid, continue to the next handler
   await next();
 });
 
@@ -94,7 +153,6 @@ api.post(
   async (c) => {
     const eventData = c.req.valid("json");
 
-    // Generate eventId first, then get the specific Event DO
     const eventId = generateEventId();
     const eventDO = getEvent(c.env, eventId);
 
@@ -178,7 +236,6 @@ api.post(
     const eventDO = getEvent(c.env, eventId);
 
     try {
-      // Generate guest link via Event DO
       const guestLink = await eventDO.generateGuestLink(guestName);
       return c.json(guestLink);
     } catch (error) {
@@ -203,7 +260,6 @@ api.get(
       const event = await eventDO.get();
       const guests = await eventDO.getEventGuests();
 
-      // Transform guests to include host status and response status
       const guestsWithStatus = guests.map((guest) => ({
         id: guest.id,
         name: guest.name || "",
@@ -354,7 +410,6 @@ api.get(
       const event = await eventDO.get();
       const guests = await eventDO.getEventGuests();
 
-      // Transform guests to include host status and response status
       const guestsWithStatus = guests.map((guest) => ({
         id: guest.id,
         name: guest.name || "",
@@ -368,7 +423,6 @@ api.get(
         (g) => g.hasResponded,
       ).length;
 
-      // Return event info and detailed guest availability data
       return c.json({
         name: event!.name,
         description: event!.description,
@@ -397,7 +451,6 @@ api.get(
     try {
       const guests = await eventDO.getEventGuests();
 
-      // Transform guests to include hasResponded status
       const guestsWithStatus = guests.map((guest) => ({
         ...guest,
         hasResponded:
@@ -448,6 +501,7 @@ api.delete(
   },
 );
 
+app.route("/api/auth", auth);
 app.route("/api", api);
 
 export { Event, Guest };

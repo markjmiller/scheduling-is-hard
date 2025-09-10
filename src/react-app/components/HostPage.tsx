@@ -911,8 +911,8 @@ export default function HostPage() {
                                       const link = `${window.location.origin}/guest/${guest.id}`;
                                       try {
                                         await navigator.share({
-                                          title: `${event?.name || 'Event'} - Availability Request`,
-                                          text: `Please share your availability for "${event?.name || 'our event'}"`,
+                                          title: `${event?.name || "Event"} - Availability Request`,
+                                          text: `Please share your availability for "${event?.name || "our event"}"`,
                                           url: link,
                                         });
                                       } catch (error) {

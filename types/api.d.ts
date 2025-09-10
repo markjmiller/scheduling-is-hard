@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/auth/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify Turnstile token and get JWT
+         * @description Exchange a valid Turnstile token for a JWT that expires in 24 hours
+         */
+        post: operations["verifyTurnstile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/events": {
         parameters: {
             query?: never;
@@ -368,6 +388,26 @@ export interface components {
             /** @description List of all guests with their availability data */
             guests: components["schemas"]["GuestAvailabilityInfo"][];
         };
+        VerifyTurnstileRequest: {
+            /**
+             * @description Cloudflare Turnstile verification token
+             * @example 0.ABC123...
+             */
+            turnstileToken: string;
+        };
+        VerifyTurnstileResponse: {
+            /**
+             * @description JWT token for API authentication
+             * @example eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+             */
+            jwt: string;
+            /**
+             * Format: date-time
+             * @description JWT expiration timestamp
+             * @example 2024-01-16T12:00:00Z
+             */
+            expiresAt: string;
+        };
         Error: {
             /**
              * @description Error type
@@ -393,6 +433,48 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    verifyTurnstile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyTurnstileRequest"];
+            };
+        };
+        responses: {
+            /** @description JWT token generated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerifyTurnstileResponse"];
+                };
+            };
+            /** @description Invalid or missing Turnstile token */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Turnstile token verification failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     createEvent: {
         parameters: {
             query?: never;
