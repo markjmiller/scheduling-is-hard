@@ -1,9 +1,8 @@
 export async function validateTurnstile(
   token: string,
   remoteip: string | undefined,
-  env: any,
 ): Promise<boolean> {
-  const SECRET_KEY = env.CF_TURNSTILE_SECRET_KEY;
+  const SECRET_KEY = import.meta.env.VITE_CF_TURNSTILE_SECRET_KEY;
   if (token.length === 0) {
     console.error("Turnstile token is empty");
     return false;
@@ -23,6 +22,11 @@ export async function validateTurnstile(
         }
       }
     */
+
+    // console.log("Turnstile token:", token);
+    // console.log("Turnstile remoteip:", remoteip);
+    // console.log("Turnstile secret key:", SECRET_KEY);
+
     const requestBody: { secret: string; response: string; remoteip?: string } =
       {
         secret: SECRET_KEY,
@@ -44,7 +48,11 @@ export async function validateTurnstile(
       },
     );
 
-    const result = (await response.json()) as { success: boolean };
+    const json_response = await response.json();
+
+    // console.log("Turnstile response:", json_response);
+
+    const result = json_response as { success: boolean };
     return result.success;
   } catch (error) {
     console.error("Turnstile validation error:", error);

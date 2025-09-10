@@ -37,16 +37,76 @@ interface EventForGuest {
 // API base URL
 const API_BASE = "/api";
 
-// Store the Turnstile token globally for API calls
-let turnstileToken: string | null = null;
+// JWT management
+const JWT_STORAGE_KEY = "scheduling_jwt";
+const JWT_EXPIRY_KEY = "scheduling_jwt_expiry";
 
-export class ApiService {
-  // Set the Turnstile token for all subsequent API calls
-  static setTurnstileToken(token: string) {
-    turnstileToken = token;
+// JWT utilities
+class JWTManager {
+  static setJWT(jwt: string, expiresAt: string) {
+    sessionStorage.setItem(JWT_STORAGE_KEY, jwt);
+    sessionStorage.setItem(JWT_EXPIRY_KEY, expiresAt);
   }
 
-  // Get headers with Turnstile token
+  static getJWT(): string | null {
+    const jwt = sessionStorage.getItem(JWT_STORAGE_KEY);
+    const expiresAt = sessionStorage.getItem(JWT_EXPIRY_KEY);
+
+    if (!jwt || !expiresAt) {
+      return null;
+    }
+
+    // Check if token is expired or has invalid expiration date
+    const expirationDate = new Date(expiresAt);
+    if (isNaN(expirationDate.getTime()) || expirationDate <= new Date()) {
+      this.clearJWT();
+      return null;
+    }
+
+    return jwt;
+  }
+
+  static clearJWT() {
+    sessionStorage.removeItem(JWT_STORAGE_KEY);
+    sessionStorage.removeItem(JWT_EXPIRY_KEY);
+  }
+
+  static isJWTValid(): boolean {
+    return this.getJWT() !== null;
+  }
+
+  static getExpiryDate(): Date | null {
+    const expiresAt = sessionStorage.getItem(JWT_EXPIRY_KEY);
+    return expiresAt ? new Date(expiresAt) : null;
+  }
+}
+
+export class ApiService {
+  // Verify Turnstile token and get JWT
+  static async verifyTurnstile(
+    turnstileToken: string,
+  ): Promise<{ jwt: string; expiresAt: string }> {
+    const response = await fetch(`${API_BASE}/auth/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ turnstileToken }),
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to verify Turnstile token: ${response.statusText}`,
+      );
+    }
+
+    const result = await response.json();
+
+    // Store JWT in session storage
+    JWTManager.setJWT(result.jwt, result.expiresAt);
+
+    return result;
+  }
+
+  // Get headers with JWT token
   private static getHeaders(
     additionalHeaders: Record<string, string> = {},
   ): Record<string, string> {
@@ -54,12 +114,43 @@ export class ApiService {
       ...additionalHeaders,
     };
 
-    if (turnstileToken) {
-      headers["X-Turnstile-Token"] = turnstileToken;
+    const jwt = JWTManager.getJWT();
+    if (jwt) {
+      headers["Authorization"] = `Bearer ${jwt}`;
     }
 
     return headers;
   }
+
+  // Check if user is authenticated
+  static isAuthenticated(): boolean {
+    return JWTManager.isJWTValid();
+  }
+
+  // Clear authentication
+  static clearAuth() {
+    JWTManager.clearJWT();
+  }
+
+  // Get JWT expiry date
+  static getAuthExpiry(): Date | null {
+    return JWTManager.getExpiryDate();
+  }
+  // Handle API responses and check for auth errors
+  private static async handleResponse<T>(response: Response): Promise<T> {
+    if (response.status === 401) {
+      // JWT expired or invalid, clear auth
+      this.clearAuth();
+      throw new Error("Authentication expired. Please refresh the page.");
+    }
+
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
   static async createEvent(eventData: CreateEventRequest): Promise<Event> {
     const response = await fetch(`${API_BASE}/events`, {
       method: "POST",
@@ -67,11 +158,7 @@ export class ApiService {
       body: JSON.stringify(eventData),
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to create event: ${response.statusText}`);
-    }
-
-    return response.json();
+    return this.handleResponse<Event>(response);
   }
 
   static async getEvent(eventId: string): Promise<Event> {
@@ -79,11 +166,7 @@ export class ApiService {
       headers: this.getHeaders(),
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to get event: ${response.statusText}`);
-    }
-
-    return response.json();
+    return this.handleResponse<Event>(response);
   }
 
   static async updateEvent(
@@ -96,11 +179,7 @@ export class ApiService {
       body: JSON.stringify(updateData),
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to update event: ${response.statusText}`);
-    }
-
-    return response.json();
+    return this.handleResponse<Event>(response);
   }
 
   // Generate guest link
@@ -114,11 +193,7 @@ export class ApiService {
       body: JSON.stringify({ guestName }),
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to generate guest link: ${response.statusText}`);
-    }
-
-    return response.json();
+    return this.handleResponse<GuestLink>(response);
   }
 
   static async getGuest(guestId: string): Promise<Guest> {
@@ -126,11 +201,7 @@ export class ApiService {
       headers: this.getHeaders(),
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to get guest: ${response.statusText}`);
-    }
-
-    return response.json();
+    return this.handleResponse<Guest>(response);
   }
 
   // Get event availability heatmap
@@ -141,29 +212,19 @@ export class ApiService {
       headers: this.getHeaders(),
     });
 
-    if (!response.ok) {
-      throw new Error(
-        `Failed to get event availability: ${response.statusText}`,
-      );
-    }
-
-    return response.json();
+    return this.handleResponse<EventAvailability>(response);
   }
 
-  // Get event availability heatmap
+  // Get event for guest
   static async getEventForGuest(guestId: string): Promise<EventForGuest> {
     const response = await fetch(`${API_BASE}/guests/${guestId}/event`, {
       headers: this.getHeaders(),
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to get event for guest: ${response.statusText}`);
-    }
-
-    return response.json();
+    return this.handleResponse<EventForGuest>(response);
   }
 
-  // Update guest name (new guest-only endpoint)
+  // Update guest name
   static async updateGuestName(guestId: string, name: string): Promise<Guest> {
     const response = await fetch(`${API_BASE}/guests/${guestId}/name`, {
       method: "PUT",
@@ -171,14 +232,10 @@ export class ApiService {
       body: JSON.stringify({ name }),
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to update guest name: ${response.statusText}`);
-    }
-
-    return response.json();
+    return this.handleResponse<Guest>(response);
   }
 
-  // Update guest availability (new guest-only endpoint)
+  // Update guest availability
   static async updateGuestAvailability(
     guestId: string,
     availability: string[],
@@ -189,13 +246,7 @@ export class ApiService {
       body: JSON.stringify({ availability }),
     });
 
-    if (!response.ok) {
-      throw new Error(
-        `Failed to update guest availability: ${response.statusText}`,
-      );
-    }
-
-    return response.json();
+    return this.handleResponse<Guest>(response);
   }
 
   // Get event guests
@@ -204,11 +255,7 @@ export class ApiService {
       headers: this.getHeaders(),
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to get event guests: ${response.statusText}`);
-    }
-
-    return response.json();
+    return this.handleResponse<Guest[]>(response);
   }
 
   // Delete guest
@@ -221,8 +268,6 @@ export class ApiService {
       },
     );
 
-    if (!response.ok) {
-      throw new Error(`Failed to delete guest: ${response.statusText}`);
-    }
+    await this.handleResponse<void>(response);
   }
 }
